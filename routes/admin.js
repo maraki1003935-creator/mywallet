@@ -9,6 +9,12 @@ const Withdraw = require("../models/Withdraw");
 const User = require("../models/User");
 const LoginActivity = require("../models/LoginActivity");
 const Transaction = require("../models/Transaction");
+const jwt = require("jsonwebtoken");
+
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "123456";
+
+const SECRET_KEY = "mywallet_admin_secret";
 
 router.get("/deposits", async (req, res) => {
 
@@ -1224,6 +1230,67 @@ router.get("/reports/export", async (req, res) => {
         console.log(err);
 
         res.status(500).send("Error generating report.");
+
+    }
+
+});
+// ===============================
+// ADMIN LOGIN
+// ===============================
+
+router.post("/login", async (req, res) => {
+
+    try {
+
+        const { username, password } = req.body;
+
+        if (
+            username !== ADMIN_USERNAME ||
+            password !== ADMIN_PASSWORD
+        ) {
+
+            return res.json({
+
+                success: false,
+                message: "Invalid username or password."
+
+            });
+
+        }
+
+        const token = jwt.sign(
+
+            {
+
+                admin: true
+
+            },
+
+            SECRET_KEY,
+
+            {
+
+                expiresIn: "24h"
+
+            }
+
+        );
+
+        res.json({
+
+            success: true,
+            token
+
+        });
+
+    } catch (err) {
+
+        res.json({
+
+            success: false,
+            message: err.message
+
+        });
 
     }
 

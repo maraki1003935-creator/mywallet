@@ -1,66 +1,55 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
 <meta charset="UTF-8">
-
 <title>Admin Login</title>
 
 <style>
 
 body{
-
 font-family:Arial;
-
-background:#f5f5f5;
-
+background:#f2f2f2;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
 }
 
 .box{
-
-width:350px;
-
-margin:100px auto;
-
 background:white;
-
-padding:20px;
-
+padding:30px;
 border-radius:10px;
+width:350px;
+box-shadow:0 0 15px rgba(0,0,0,.2);
+}
 
-box-shadow:0 0 10px gray;
-
+h2{
+text-align:center;
 }
 
 input{
-
 width:100%;
-
-padding:10px;
-
-margin-top:10px;
-
-box-sizing:border-box;
-
+padding:12px;
+margin-top:12px;
+border:1px solid #ccc;
+border-radius:5px;
+font-size:16px;
 }
 
 button{
-
 width:100%;
-
 padding:12px;
-
-margin-top:15px;
-
-background:#007bff;
-
+margin-top:20px;
+background:#0d6efd;
 color:white;
-
 border:none;
-
+border-radius:5px;
+font-size:16px;
 cursor:pointer;
+}
 
+button:hover{
+background:#0056b3;
 }
 
 </style>
@@ -76,7 +65,7 @@ cursor:pointer;
 <input
 type="text"
 id="username"
-placeholder="Username">
+placeholder="Admin Username">
 
 <input
 type="password"
@@ -91,8 +80,47 @@ Login
 
 </div>
 
-<script src="admin-login.js"></script>
+<script>
+
+async function login(){
+
+const username=document.getElementById("username").value;
+const password=document.getElementById("password").value;
+
+const res=await fetch("/admin/login",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+username,
+password
+
+})
+
+});
+
+const data=await res.json();
+
+if(data.success){
+
+localStorage.setItem("adminToken",data.token);
+
+location.href="admin.html";
+
+}else{
+
+alert(data.message);
+
+}
+
+}
+
+</script>
 
 </body>
-
 </html>
