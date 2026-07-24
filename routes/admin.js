@@ -15,6 +15,39 @@ const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "123456";
 
 const SECRET_KEY = "mywallet_admin_secret";
+function verifyAdmin(req,res,next){
+
+const token=req.headers.authorization;
+
+if(!token){
+
+return res.status(401).json({
+
+success:false,
+message:"Unauthorized"
+
+});
+
+}
+
+try{
+
+jwt.verify(token.replace("Bearer ",""),SECRET_KEY);
+
+next();
+
+}catch(err){
+
+return res.status(401).json({
+
+success:false,
+message:"Invalid Token"
+
+});
+
+}
+
+}
 
 router.get("/deposits", async (req, res) => {
 
@@ -447,7 +480,7 @@ router.post("/login", async (req, res) => {
 // GET ALL USERS
 // ======================================
 
-router.get("/users", async (req, res) => {
+router.get("/users",verifyAdmin,async(req,res)=>{
 
     try {
 

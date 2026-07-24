@@ -76,7 +76,17 @@ border-radius:8px;
 
 </head>
 
-<body>
+<body> <script>
+
+const token = localStorage.getItem("adminToken");
+
+if(!token){
+
+location.href="admin-login.html";
+
+}
+
+</script>
 
 <h2>Admin Dashboard</h2>
 
