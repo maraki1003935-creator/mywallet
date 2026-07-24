@@ -18,14 +18,19 @@ const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
 
 const app = express();
-const PORT = process.env.PORT || 3000; app.use("/auth", authRoutes);
-app.use("/admin", adminRoutes);
+const PORT = process.env.PORT || 3000;
+
+// Parse request body FIRST
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Static files
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Routes
+app.use("/auth", authRoutes);
+app.use("/admin", adminRoutes);
 // =======================
 // MongoDB Connection
 // =======================
