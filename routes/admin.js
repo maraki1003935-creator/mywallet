@@ -441,9 +441,9 @@ router.post("/login", async (req, res) => {
         const { username, password } = req.body;
 
         if (
-            username === "admin" &&
-            password === "admin123"
-        ) {
+    username === "admin" &&
+    password === "123456"
+) {
 
             return res.json({
 
