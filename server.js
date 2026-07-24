@@ -1,5 +1,5 @@
 require("dotenv").config();
-const Profile = require("./models/profile");
+const Profile = require("./models/Profile");
 
 const express = require("express");
 const mongoose = require("mongoose");
