@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Referral</title>
+
+<style>
+
+body{
+
+font-family:Arial;
+
+background:#f5f5f5;
+
+padding:20px;
+
+}
+
+.card{
+
+max-width:500px;
+
+margin:auto;
+
+background:white;
+
+padding:20px;
+
+border-radius:10px;
+
+box-shadow:0 0 10px #ccc;
+
+}
+
+input{
+
+width:100%;
+
+padding:10px;
+
+margin-top:10px;
+
+}
+
+button{
+
+width:100%;
+
+padding:12px;
+
+margin-top:10px;
+
+background:#28a745;
+
+color:white;
+
+border:none;
+
+cursor:pointer;
+
+}
+
+h2{
+
+text-align:center;
+
+}
+
+.info{
+
+margin-top:20px;
+
+line-height:30px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Referral Program</h2>
+
+<label>Your Referral Code</label>
+
+<input id="refCode" readonly>
+
+<label>Your Referral Link</label>
+
+<input id="refLink" readonly>
+
+<button onclick="copyLink()">
+
+Copy Referral Link
+
+</button>
+
+<button onclick="shareLink()">
+
+Share Referral Link
+
+</button>
+
+<div class="info">
+
+<p><b>Invited Users:</b> <span id="invited">0</span></p>
+
+<p><b>Referral Earnings:</b> <span id="earnings">0 ETB</span></p>
+
+<p>
+
+Earn <b>600 ETB</b> for every friend who:
+
+<br><br>
+
+✅ Registers using your referral link
+
+<br>
+
+✅ Makes their first approved deposit of at least 5,000 ETB
+
+</p>
+
+</div>
+
+</div>
+
+<script src="referral.js"></script>
+
+</body>
+
+</html>

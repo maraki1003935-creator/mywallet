@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Admin Reports</title>
+
+<style>
+
+body{
+font-family:Arial,sans-serif;
+background:#f5f5f5;
+margin:0;
+padding:20px;
+}
+
+h1{
+text-align:center;
+margin-bottom:20px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:12px;
+box-shadow:0 2px 10px rgba(0,0,0,.15);
+text-align:center;
+}
+
+.card h2{
+margin:0;
+font-size:18px;
+}
+
+.card h1{
+margin-top:15px;
+color:#0d6efd;
+}
+
+.actions{
+margin-top:25px;
+text-align:center;
+}
+
+.actions button{
+padding:12px 20px;
+border:none;
+border-radius:8px;
+background:#0d6efd;
+color:white;
+cursor:pointer;
+font-size:16px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Admin Reports</h1>
+
+<div class="grid">
+
+<div class="card">
+<h2>Today's Deposits</h2>
+<h1 id="todayDeposits">0 ETB</h1>
+</div>
+
+<div class="card">
+<h2>Today's Withdrawals</h2>
+<h1 id="todayWithdrawals">0 ETB</h1>
+</div>
+
+<div class="card">
+<h2>New Users Today</h2>
+<h1 id="newUsers">0</h1>
+</div>
+
+<div class="card">
+<h2>Total Revenue</h2>
+<h1 id="revenue">0 ETB</h1>
+</div>
+
+<div class="card">
+<h2>Pending Deposits</h2>
+<h1 id="pendingDeposits">0</h1>
+</div>
+
+<div class="card">
+<h2>Pending Withdrawals</h2>
+<h1 id="pendingWithdrawals">0</h1>
+</div>
+
+</div>
+
+<div class="actions">
+
+<button onclick="exportCSV()">
+
+📥 Export Report
+
+</button>
+
+</div>
+
+<script src="admin-reports.js"></script>
+
+</body>
+</html>

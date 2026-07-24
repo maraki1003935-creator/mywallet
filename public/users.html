@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Manage Users</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f5f5f5;
+padding:20px;
+}
+
+h2{
+text-align:center;
+}
+
+input{
+width:100%;
+padding:10px;
+margin-bottom:20px;
+box-sizing:border-box;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:10px;
+text-align:center;
+}
+
+th{
+background:#007bff;
+color:white;
+}
+
+button{
+padding:8px 12px;
+margin:2px;
+border:none;
+cursor:pointer;
+color:white;
+}
+
+.edit{
+background:#28a745;
+}
+
+.ban{
+background:#dc3545;
+}
+
+.unban{
+background:#ffc107;
+color:black;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>User Management</h2>
+
+<input
+type="text"
+id="search"
+placeholder="Search by phone number">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Phone</th>
+
+<th>Balance</th>
+
+<th>Referral Code</th>
+
+<th>Invited Users</th>
+
+<th>Status</th>
+
+<th>Actions</th>
+
+</tr>
+
+</thead>
+
+<tbody id="usersTable">
+
+</tbody>
+
+</table>
+
+<script src="users.js"></script>
+
+</body>
+
+</html>

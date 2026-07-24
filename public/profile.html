@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>My Profile</title>
+
+<style>
+
+body{
+
+font-family:Arial;
+
+background:#f5f5f5;
+
+}
+
+.container{
+
+width:400px;
+
+margin:20px auto;
+
+background:white;
+
+padding:20px;
+
+border-radius:10px;
+
+box-shadow:0 0 10px #ccc;
+
+}
+
+h2{
+
+text-align:center;
+
+}
+
+img{
+
+width:120px;
+
+height:120px;
+
+border-radius:50%;
+
+display:block;
+
+margin:auto;
+
+object-fit:cover;
+
+}
+
+input{
+
+width:100%;
+
+padding:10px;
+
+margin-top:10px;
+
+box-sizing:border-box;
+
+}
+
+button{
+
+width:100%;
+
+padding:12px;
+
+margin-top:15px;
+
+background:#007bff;
+
+color:white;
+
+border:none;
+
+cursor:pointer;
+
+border-radius:5px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>My Profile</h2>
+
+<img id="photo" src="uploads/default.png">
+
+<input type="file" id="image">
+
+<input
+type="text"
+id="name"
+placeholder="Full Name">
+
+<input
+type="email"
+id="email"
+placeholder="Email Address">
+
+<input
+type="text"
+id="phone"
+placeholder="Phone Number"
+readonly>
+
+<input
+type="password"
+id="currentPassword"
+placeholder="Current Password">
+
+<input
+type="password"
+id="newPassword"
+placeholder="New Password">
+
+<input
+type="password"
+id="confirmPassword"
+placeholder="Confirm New Password">
+
+<button onclick="saveProfile()">
+
+Save Profile
+
+</button>
+
+</div>
+
+<script src="profile.js"></script>
+
+</body>
+
+</html>

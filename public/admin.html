@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Admin Dashboard</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f5f5f5;
+margin:20px;
+}
+
+h2{
+text-align:center;
+}
+
+.cards{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:15px;
+margin-bottom:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+text-align:center;
+border-radius:8px;
+box-shadow:0 0 5px #ccc;
+}
+
+.card h3{
+margin:0;
+}
+
+.card h1{
+color:green;
+}
+
+.menu{
+
+margin-top:20px;
+
+display:grid;
+
+grid-template-columns:repeat(2,1fr);
+
+gap:15px;
+
+}
+
+.menu button{
+
+padding:15px;
+
+font-size:16px;
+
+cursor:pointer;
+
+background:#007bff;
+
+color:white;
+
+border:none;
+
+border-radius:8px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Admin Dashboard</h2>
+
+<div class="cards">
+
+<div class="card">
+<h3>Total Users</h3>
+<h1 id="users">0</h1>
+</div>
+
+<div class="card">
+<h3>Total Deposits</h3>
+<h1 id="deposits">0</h1>
+</div>
+
+<div class="card">
+<h3>Total Withdrawals</h3>
+<h1 id="withdrawals">0</h1>
+</div>
+
+<div class="card">
+<h3>Pending Deposits</h3>
+<h1 id="pendingDeposits">0</h1>
+</div>
+
+<div class="card">
+<h3>Pending Withdrawals</h3>
+<h1 id="pendingWithdrawals">0</h1>
+</div>
+
+<div class="card">
+<h3>Total Referral Bonus</h3>
+<h1 id="referralBonus">0</h1>
+</div>
+
+<div class="card">
+<h3>Total Transactions</h3>
+<h1 id="transactions">0</h1>
+</div>
+
+<div class="card">
+<h3>Total Balance</h3>
+<h1 id="balance">0</h1>
+</div>
+
+</div>
+
+<div class="menu">
+
+<button onclick="location.href='admin-deposit.html'">
+
+Manage Deposits
+
+</button>
+
+<button onclick="location.href='admin-withdraw.html'">
+
+Manage Withdrawals
+
+</button>
+
+<button onclick="location.href='users.html'">
+
+Manage Users
+
+</button>
+
+<button onclick="location.href='transactions.html'">
+
+All Transactions
+
+</button>
+
+</div>
+
+<script src="admin.js"></script>
+
+</body>
+
+</html>
