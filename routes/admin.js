@@ -441,24 +441,30 @@ router.post("/login", async (req, res) => {
         const { username, password } = req.body;
 
         if (
-    username === "admin" &&
-    password === "123456"
-) {
+            username !== ADMIN_USERNAME ||
+            password !== ADMIN_PASSWORD
+        ) {
 
             return res.json({
-
-                success: true
-
+                success: false,
+                message: "Invalid username or password."
             });
 
         }
 
+        const token = jwt.sign(
+            {
+                admin: true
+            },
+            SECRET_KEY,
+            {
+                expiresIn: "24h"
+            }
+        );
+
         res.json({
-
-            success: false,
-
-            message: "Invalid username or password."
-
+            success: true,
+            token: token
         });
 
     } catch (err) {
@@ -466,11 +472,8 @@ router.post("/login", async (req, res) => {
         console.log(err);
 
         res.json({
-
             success: false,
-
             message: err.message
-
         });
 
     }
