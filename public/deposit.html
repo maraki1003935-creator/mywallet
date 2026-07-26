@@ -1,76 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Deposit</title>
 
 <style>
 
 body{
-font-family:Arial,sans-serif;
+font-family:Arial;
 background:#f5f5f5;
-margin:0;
-padding:20px;
+margin:20px;
 }
 
 .container{
-max-width:450px;
+max-width:500px;
 margin:auto;
-background:#fff;
+background:white;
 padding:20px;
 border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,.1);
+box-shadow:0 0 10px #ccc;
 }
 
 h2{
 text-align:center;
 }
 
-.notice{
-background:#e8f5e9;
-padding:15px;
-border-radius:8px;
-margin-bottom:20px;
-line-height:1.7;
-}
-
-label{
-font-weight:bold;
-display:block;
-margin-top:15px;
-}
-
 input{
 width:100%;
-padding:10px;
-margin-top:5px;
-box-sizing:border-box;
+padding:12px;
+margin-top:10px;
 }
 
 button{
 width:100%;
 padding:12px;
 margin-top:20px;
-background:#28a745;
+background:green;
 color:white;
 border:none;
-border-radius:6px;
 font-size:16px;
 cursor:pointer;
 }
 
-button:hover{
-background:#218838;
-}
-
-#message{
+.info{
+background:#fff8dc;
+padding:10px;
 margin-top:15px;
-text-align:center;
-font-weight:bold;
+border-radius:5px;
 }
 
 </style>
@@ -81,46 +60,45 @@ font-weight:bold;
 
 <div class="container">
 
-<h2>Deposit</h2>
+<h2>Deposit Money</h2>
 
-<div class="notice">
+<div class="info">
 
-<b>Minimum Deposit:</b> 5,000 ETB<br><br>
+<b>Telebirr Number</b><br>
 
-<b>Maximum Deposit:</b> 300,000 ETB<br><br>
+0904489434
 
-<b>Deposit To Telebirr:</b><br>
+<br><br>
 
-0904489434<br><br>
+Minimum Deposit:
+<b>5000 ETB</b>
 
-After sending the money, enter the amount below and upload your payment screenshot.
+<br>
+
+Maximum Deposit:
+<b>300000 ETB</b>
 
 </div>
 
-<form id="depositForm" enctype="multipart/form-data">
-
-<label>Phone Number</label>
+<form id="depositForm">
 
 <input
 type="text"
 id="phone"
-readonly>
-
-<label>Deposit Amount (ETB)</label>
+placeholder="Phone Number"
+required>
 
 <input
 type="number"
 id="amount"
-min="5000"
-max="300000"
-placeholder="Enter Amount">
-
-<label>Payment Screenshot</label>
+placeholder="Deposit Amount"
+required>
 
 <input
 type="file"
 id="screenshot"
-accept="image/*">
+accept="image/*"
+required>
 
 <button type="submit">
 
@@ -129,8 +107,6 @@ Submit Deposit
 </button>
 
 </form>
-
-<p id="message"></p>
 
 </div>
 

@@ -1,86 +1,68 @@
 const form = document.getElementById("depositForm");
-const phone = document.getElementById("phone");
-const amount = document.getElementById("amount");
-const screenshot = document.getElementById("screenshot");
-const message = document.getElementById("message");
 
-// Load logged-in user's phone
-phone.value = localStorage.getItem("phone") || "";
-
-form.addEventListener("submit", async (e) => {
+form.addEventListener("submit", async function (e) {
 
     e.preventDefault();
 
-    if (phone.value === "") {
+    const phone = document.getElementById("phone").value.trim();
+    const amount = document.getElementById("amount").value;
+    const screenshot = document.getElementById("screenshot").files[0];
 
-        message.style.color = "red";
-        message.textContent = "Please login first.";
+    if (!phone) {
+        alert("Enter your phone number.");
         return;
-
     }
 
-    if (Number(amount.value) < 5000) {
-
-        message.style.color = "red";
-        message.textContent = "Minimum deposit is 5000 ETB.";
+    if (Number(amount) < 5000) {
+        alert("Minimum deposit is 5000 ETB.");
         return;
-
     }
 
-    if (Number(amount.value) > 300000) {
-
-        message.style.color = "red";
-        message.textContent = "Maximum deposit is 300000 ETB.";
+    if (Number(amount) > 300000) {
+        alert("Maximum deposit is 300000 ETB.");
         return;
-
     }
 
-    if (screenshot.files.length === 0) {
-
-        message.style.color = "red";
-        message.textContent = "Please upload your payment screenshot.";
+    if (!screenshot) {
+        alert("Please upload the payment screenshot.");
         return;
-
     }
 
     const formData = new FormData();
 
-    formData.append("phone", phone.value);
-    formData.append("amount", amount.value);
-    formData.append("screenshot", screenshot.files[0]);
+    formData.append("phone", phone);
+    formData.append("amount", amount);
+    formData.append("screenshot", screenshot);
 
     try {
 
-        const response = await fetch("/deposit", {
+        const res = await fetch("/deposit", {
 
             method: "POST",
+
             body: formData
 
         });
 
-        const data = await response.json();
+        const data = await res.json();
 
         if (data.success) {
 
-            message.style.color = "green";
-            message.textContent =
-                "Deposit request submitted successfully. Please wait for admin approval.";
+            alert(data.message);
 
             form.reset();
 
-            phone.value = localStorage.getItem("phone");
-
         } else {
 
-            message.style.color = "red";
-            message.textContent = data.message;
+            alert(data.message);
 
         }
 
     } catch (err) {
 
-        message.style.color = "red";
-        message.textContent = "Server error.";
+        console.log(err);
+
+        alert("Server Error");
 
     }
 
