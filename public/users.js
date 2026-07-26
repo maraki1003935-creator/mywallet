@@ -12,15 +12,13 @@ async function loadUsers() {
 
     try {
 
-        const res = await fetch("/admin/users", {
+        const token = localStorage.getItem("adminToken");
 
-            headers: {
-
-                Authorization: "Bearer " + token
-
-            }
-
-        });
+const res = await fetch("/admin/users", {
+    headers: {
+        Authorization: "Bearer " + token
+    }
+});
 
         const data = await res.json();
 
