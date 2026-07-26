@@ -12,7 +12,6 @@ async function loadUsers() {
 
     try {
 
-        const token = localStorage.getItem("adminToken");
 
 const res = await fetch("/admin/users", {
     headers: {
