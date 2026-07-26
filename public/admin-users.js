@@ -1,19 +1,26 @@
 const table = document.getElementById("usersTable");
 
+const token = localStorage.getItem("adminToken");
+
 let users = [];
 
 async function loadUsers() {
 
     try {
 
-        const res = await fetch("/admin/users");
+        const res = await fetch("/admin/users", {
+
+            headers: {
+                Authorization: "Bearer " + token
+            }
+
+        });
 
         const data = await res.json();
 
         if (!data.success) {
 
             alert(data.message);
-
             return;
 
         }
@@ -37,33 +44,20 @@ function displayUsers(list) {
     list.forEach(user => {
 
         table.innerHTML += `
-
         <tr>
-
             <td>${user.phone}</td>
-
             <td>${user.balance} ETB</td>
-
             <td>${user.blocked ? "Blocked" : "Active"}</td>
-
             <td>
-
                 <button onclick="editBalance('${user._id}',${user.balance})">
-
                 Edit Balance
-
                 </button>
 
-                <button onclick="toggleBlock('${user._id}',${user.blocked})">
-
+                <button onclick="toggleBlock('${user._id}')">
                 ${user.blocked ? "Unblock" : "Block"}
-
                 </button>
-
             </td>
-
         </tr>
-
         `;
 
     });
@@ -72,15 +66,10 @@ function displayUsers(list) {
 
 function searchUser() {
 
-    const keyword = document
-        .getElementById("search")
-        .value
-        .toLowerCase();
+    const keyword = document.getElementById("search").value.toLowerCase();
 
     const filtered = users.filter(user =>
-
         user.phone.toLowerCase().includes(keyword)
-
     );
 
     displayUsers(filtered);
@@ -89,13 +78,7 @@ function searchUser() {
 
 async function editBalance(id, balance) {
 
-    const newBalance = prompt(
-
-        "Enter new balance:",
-
-        balance
-
-    );
+    const newBalance = prompt("Enter new balance", balance);
 
     if (newBalance == null) return;
 
@@ -105,7 +88,8 @@ async function editBalance(id, balance) {
 
         headers: {
 
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token
 
         },
 
@@ -125,11 +109,17 @@ async function editBalance(id, balance) {
 
 }
 
-async function toggleBlock(id, blocked) {
+async function toggleBlock(id) {
 
     const res = await fetch("/admin/user/block/" + id, {
 
-        method: "POST"
+        method: "POST",
+
+        headers: {
+
+            Authorization: "Bearer " + token
+
+        }
 
     });
 
