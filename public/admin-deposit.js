@@ -1,8 +1,12 @@
 const table = document.getElementById("depositTable");
 
-async function loadDeposits() {
+const token = localStorage.getItem("adminToken");
 
-    const token = localStorage.getItem("adminToken");
+if (!token) {
+    location.href = "admin-login.html";
+}
+
+async function loadDeposits() {
 
     try {
 
@@ -25,24 +29,24 @@ async function loadDeposits() {
 
                 <td>${item.amount} ETB</td>
 
-                <td>${item.status}</td>
-
                 <td>
                     <a href="/uploads/${item.screenshot}" target="_blank">
                         View Screenshot
                     </a>
                 </td>
 
+                <td>${item.status}</td>
+
                 <td>
 
                     ${
                         item.status === "Pending"
                         ? `
-                        <button onclick="approveDeposit('${item._id}')">
+                        <button class="approve" onclick="approveDeposit('${item._id}')">
                             Approve
                         </button>
 
-                        <button onclick="rejectDeposit('${item._id}')">
+                        <button class="reject" onclick="rejectDeposit('${item._id}')">
                             Reject
                         </button>
                         `
@@ -58,9 +62,8 @@ async function loadDeposits() {
 
     } catch (err) {
 
-        alert("Server Error");
-
         console.log(err);
+        alert("Server Error");
 
     }
 
@@ -68,45 +71,63 @@ async function loadDeposits() {
 
 async function approveDeposit(id) {
 
-    const token = localStorage.getItem("adminToken");
+    if (!confirm("Approve this deposit?")) return;
 
-    const res = await fetch("/admin/deposit/approve/" + id, {
+    try {
 
-        method: "POST",
+        const res = await fetch("/admin/deposit/approve/" + id, {
 
-        headers: {
-            Authorization: "Bearer " + token
-        }
+            method: "POST",
 
-    });
+            headers: {
+                Authorization: "Bearer " + token
+            }
 
-    const data = await res.json();
+        });
 
-    alert(data.message);
+        const data = await res.json();
 
-    loadDeposits();
+        alert(data.message);
+
+        loadDeposits();
+
+    } catch (err) {
+
+        console.log(err);
+        alert("Server Error");
+
+    }
 
 }
 
 async function rejectDeposit(id) {
 
-    const token = localStorage.getItem("adminToken");
+    if (!confirm("Reject this deposit?")) return;
 
-    const res = await fetch("/admin/deposit/reject/" + id, {
+    try {
 
-        method: "POST",
+        const res = await fetch("/admin/deposit/reject/" + id, {
 
-        headers: {
-            Authorization: "Bearer " + token
-        }
+            method: "POST",
 
-    });
+            headers: {
+                Authorization: "Bearer " + token
+            }
 
-    const data = await res.json();
+        });
 
-    alert(data.message);
+        const data = await res.json();
 
-    loadDeposits();
+        alert(data.message);
+
+        loadDeposits();
+
+    } catch (err) {
+
+        console.log(err);
+        alert("Server Error");
+
+    }
 
 }
 
