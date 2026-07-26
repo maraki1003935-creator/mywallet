@@ -1267,66 +1267,6 @@ router.get("/reports/export", async (req, res) => {
     }
 
 });
-// ===============================
-// ADMIN LOGIN
-// ===============================
 
-router.post("/login", async (req, res) => {
-
-    try {
-
-        const { username, password } = req.body;
-
-        if (
-            username !== ADMIN_USERNAME ||
-            password !== ADMIN_PASSWORD
-        ) {
-
-            return res.json({
-
-                success: false,
-                message: "Invalid username or password."
-
-            });
-
-        }
-
-        const token = jwt.sign(
-
-            {
-
-                admin: true
-
-            },
-
-            SECRET_KEY,
-
-            {
-
-                expiresIn: "24h"
-
-            }
-
-        );
-
-        res.json({
-
-            success: true,
-            token
-
-        });
-
-    } catch (err) {
-
-        res.json({
-
-            success: false,
-            message: err.message
-
-        });
-
-    }
-
-});
 
 module.exports = router;

@@ -52,6 +52,10 @@ mongoose.connect(process.env.MONGODB_URI)
 // =======================
 // Multer Upload Settings
 // =======================
+const fs = require("fs");
+if (!fs.existsSync("uploads")) {
+    fs.mkdirSync("uploads", { recursive: true });
+}
 
 const storage = multer.diskStorage({
 
@@ -171,16 +175,14 @@ app.post("/deposit", upload.single("screenshot"), async (req, res) => {
 
     } catch (err) {
 
-        console.log(err);
+    console.error("Deposit Error:", err);
 
-        res.json({
+    res.status(500).json({
+        success: false,
+        message: "Server error"
+    });
 
-            success: false,
-            message: err.message
-
-        });
-
-    }
+}
 
 });
 // =======================
