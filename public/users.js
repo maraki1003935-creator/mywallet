@@ -1,5 +1,9 @@
 const token = localStorage.getItem("adminToken");
 
+if (!token) {
+    location.href = "admin-login.html";
+}
+
 const table = document.getElementById("usersTable");
 
 let users = [];
@@ -23,6 +27,7 @@ async function loadUsers() {
         if (!data.success) {
 
             alert(data.message);
+
             return;
 
         }
@@ -34,6 +39,7 @@ async function loadUsers() {
     } catch (err) {
 
         console.log(err);
+
         alert("Server Error");
 
     }
@@ -82,15 +88,10 @@ function displayUsers(list) {
 
 function searchUser() {
 
-    const keyword = document
-        .getElementById("search")
-        .value
-        .toLowerCase();
+    const keyword = document.getElementById("search").value.toLowerCase();
 
     const filtered = users.filter(user =>
-
         user.phone.toLowerCase().includes(keyword)
-
     );
 
     displayUsers(filtered);

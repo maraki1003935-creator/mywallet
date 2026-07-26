@@ -2,9 +2,7 @@
 <html>
 
 <head>
-
 <meta charset="UTF-8">
-
 <title>Manage Users</title>
 
 <style>
@@ -20,42 +18,32 @@ text-align:center;
 }
 
 input{
-
-width:300px;
 padding:10px;
-margin-bottom:20px;
-
+width:300px;
+margin-bottom:15px;
 }
 
 table{
-
 width:100%;
 border-collapse:collapse;
 background:white;
-
 }
 
 th,td{
-
 border:1px solid #ddd;
 padding:10px;
 text-align:center;
-
 }
 
 th{
-
-background:#0d6efd;
+background:#007bff;
 color:white;
-
 }
 
 button{
-
-padding:6px 12px;
+padding:8px 12px;
 margin:2px;
 cursor:pointer;
-
 }
 
 </style>
@@ -79,9 +67,9 @@ location.href="admin-login.html";
 <h2>Manage Users</h2>
 
 <input
-type="text"
 id="search"
-placeholder="Search phone number"
+type="text"
+placeholder="Search phone..."
 onkeyup="searchUser()">
 
 <table>
@@ -91,12 +79,9 @@ onkeyup="searchUser()">
 <tr>
 
 <th>Phone</th>
-
 <th>Balance</th>
-
 <th>Status</th>
-
-<th>Actions</th>
+<th>Action</th>
 
 </tr>
 
@@ -111,5 +96,4 @@ onkeyup="searchUser()">
 <script src="users.js"></script>
 
 </body>
-
 </html>
