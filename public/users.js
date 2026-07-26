@@ -1,95 +1,76 @@
-if(localStorage.getItem("admin")!=="true"){
+const token = localStorage.getItem("adminToken");
 
-    window.location.href="admin-login.html";
+const table = document.getElementById("usersTable");
 
-}
+let users = [];
 
-const table=document.getElementById("usersTable");
-const search=document.getElementById("search");
+async function loadUsers() {
 
-let allUsers=[];
+    try {
 
-async function loadUsers(){
+        const res = await fetch("/admin/users", {
 
-    try{
+            headers: {
 
-        const res=await fetch("/admin/users");
+                Authorization: "Bearer " + token
 
-        const data=await res.json();
+            }
 
-        if(!data.success){
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
 
             alert(data.message);
-
             return;
 
         }
 
-        allUsers=data.users;
+        users = data.users;
 
-        displayUsers(allUsers);
+        displayUsers(users);
 
-    }catch(err){
+    } catch (err) {
 
+        console.log(err);
         alert("Server Error");
 
     }
 
 }
 
-function displayUsers(users){
+function displayUsers(list) {
 
-    table.innerHTML="";
+    table.innerHTML = "";
 
-    users.forEach(user=>{
+    list.forEach(user => {
 
-        table.innerHTML+=`
+        table.innerHTML += `
 
         <tr>
 
-        <td>${user.phone}</td>
+            <td>${user.phone}</td>
 
-        <td>${user.balance} ETB</td>
+            <td>${user.balance} ETB</td>
 
-        <td>${user.referralCode}</td>
+            <td>${user.blocked ? "Blocked" : "Active"}</td>
 
-        <td>${user.invitedUsers}</td>
+            <td>
 
-        <td>${user.banned?"Banned":"Active"}</td>
+                <button onclick="editBalance('${user._id}',${user.balance})">
 
-        <td>
+                Edit Balance
 
-        <button class="edit"
+                </button>
 
-        onclick="editBalance('${user._id}')">
+                <button onclick="toggleBlock('${user._id}')">
 
-        Edit Balance
+                ${user.blocked ? "Unblock" : "Block"}
 
-        </button>
+                </button>
 
-        ${user.banned?
-
-        `<button class="unban"
-
-        onclick="unbanUser('${user._id}')">
-
-        Unban
-
-        </button>`
-
-        :
-
-        `<button class="ban"
-
-        onclick="banUser('${user._id}')">
-
-        Ban
-
-        </button>`
-
-        }
-
-        </td>
+            </td>
 
         </tr>
 
@@ -99,11 +80,14 @@ function displayUsers(users){
 
 }
 
-search.addEventListener("input",()=>{
+function searchUser() {
 
-    const keyword=search.value.toLowerCase();
+    const keyword = document
+        .getElementById("search")
+        .value
+        .toLowerCase();
 
-    const filtered=allUsers.filter(user=>
+    const filtered = users.filter(user =>
 
         user.phone.toLowerCase().includes(keyword)
 
@@ -111,33 +95,35 @@ search.addEventListener("input",()=>{
 
     displayUsers(filtered);
 
-});
+}
 
-async function editBalance(id){
+async function editBalance(id, balance) {
 
-    const amount=prompt("Enter new balance:");
+    const newBalance = prompt("Enter new balance", balance);
 
-    if(amount===null)return;
+    if (newBalance == null) return;
 
-    const res=await fetch("/admin/user/balance/"+id,{
+    const res = await fetch("/admin/user/balance/" + id, {
 
-        method:"POST",
+        method: "POST",
 
-        headers:{
+        headers: {
 
-            "Content-Type":"application/json"
+            "Content-Type": "application/json",
+
+            Authorization: "Bearer " + token
 
         },
 
-        body:JSON.stringify({
+        body: JSON.stringify({
 
-            balance:Number(amount)
+            balance: Number(newBalance)
 
         })
 
     });
 
-    const data=await res.json();
+    const data = await res.json();
 
     alert(data.message);
 
@@ -145,31 +131,21 @@ async function editBalance(id){
 
 }
 
-async function banUser(id){
+async function toggleBlock(id) {
 
-    const res=await fetch("/admin/user/ban/"+id,{
+    const res = await fetch("/admin/user/block/" + id, {
 
-        method:"POST"
+        method: "POST",
 
-    });
+        headers: {
 
-    const data=await res.json();
+            Authorization: "Bearer " + token
 
-    alert(data.message);
-
-    loadUsers();
-
-}
-
-async function unbanUser(id){
-
-    const res=await fetch("/admin/user/unban/"+id,{
-
-        method:"POST"
+        }
 
     });
 
-    const data=await res.json();
+    const data = await res.json();
 
     alert(data.message);
 

@@ -1,66 +1,58 @@
 const table = document.getElementById("depositTable");
 
-const token = localStorage.getItem("adminToken");
-
 async function loadDeposits() {
+
+    const token = localStorage.getItem("adminToken");
 
     try {
 
         const res = await fetch("/admin/deposits", {
-
             headers: {
                 Authorization: "Bearer " + token
             }
-
         });
 
         const deposits = await res.json();
 
         table.innerHTML = "";
 
-        deposits.forEach(deposit => {
+        deposits.forEach(item => {
 
             table.innerHTML += `
+            <tr>
 
-<tr>
+                <td>${item.phone}</td>
 
-<td>${deposit.phone}</td>
+                <td>${item.amount} ETB</td>
 
-<td>${deposit.amount} ETB</td>
+                <td>${item.status}</td>
 
-<td>
-<a href="/uploads/${deposit.screenshot}" target="_blank">
-<img src="/uploads/${deposit.screenshot}" width="120">
-</a>
-</td>
+                <td>
+                    <a href="/uploads/${item.screenshot}" target="_blank">
+                        View Screenshot
+                    </a>
+                </td>
 
-<td>${deposit.status}</td>
+                <td>
 
-<td>
+                    ${
+                        item.status === "Pending"
+                        ? `
+                        <button onclick="approveDeposit('${item._id}')">
+                            Approve
+                        </button>
 
-${deposit.status==="Pending" ? `
+                        <button onclick="rejectDeposit('${item._id}')">
+                            Reject
+                        </button>
+                        `
+                        : "-"
+                    }
 
-<button class="approve"
-onclick="approveDeposit('${deposit._id}')">
+                </td>
 
-Approve
-
-</button>
-
-<button class="reject"
-onclick="rejectDeposit('${deposit._id}')">
-
-Reject
-
-</button>
-
-` : "-"}
-
-</td>
-
-</tr>
-
-`;
+            </tr>
+            `;
 
         });
 
@@ -74,47 +66,47 @@ Reject
 
 }
 
-async function approveDeposit(id){
+async function approveDeposit(id) {
 
-if(!confirm("Approve this deposit?")) return;
+    const token = localStorage.getItem("adminToken");
 
-const res=await fetch("/admin/deposit/approve/"+id,{
+    const res = await fetch("/admin/deposit/approve/" + id, {
 
-method:"POST",
+        method: "POST",
 
-headers:{
-Authorization:"Bearer "+token
+        headers: {
+            Authorization: "Bearer " + token
+        }
+
+    });
+
+    const data = await res.json();
+
+    alert(data.message);
+
+    loadDeposits();
+
 }
 
-});
+async function rejectDeposit(id) {
 
-const data=await res.json();
+    const token = localStorage.getItem("adminToken");
 
-alert(data.message);
+    const res = await fetch("/admin/deposit/reject/" + id, {
 
-loadDeposits();
+        method: "POST",
 
-}
+        headers: {
+            Authorization: "Bearer " + token
+        }
 
-async function rejectDeposit(id){
+    });
 
-if(!confirm("Reject this deposit?")) return;
+    const data = await res.json();
 
-const res=await fetch("/admin/deposit/reject/"+id,{
+    alert(data.message);
 
-method:"POST",
-
-headers:{
-Authorization:"Bearer "+token
-}
-
-});
-
-const data=await res.json();
-
-alert(data.message);
-
-loadDeposits();
+    loadDeposits();
 
 }
 
