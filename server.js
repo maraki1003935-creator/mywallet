@@ -2,11 +2,14 @@ require("dotenv").config();
 const Profile = require("./models/Profile");
 
 const express = require("express");
+
+const path = require("path");
+const app = express();
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const mongoose = require("mongoose");
 const multer = require("multer");
-const path = require("path");
-// Serve uploaded images
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 const Deposit = require("./models/Deposit");
 const Withdraw = require("./models/Withdraw");
 const Transaction = require("./models/Transaction");
@@ -17,8 +20,6 @@ const LoginActivity = require("./models/LoginActivity");
 
 const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
-
-const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Parse request body FIRST
