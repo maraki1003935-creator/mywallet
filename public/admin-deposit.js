@@ -16,11 +16,16 @@ async function loadDeposits() {
             }
         });
 
-        const deposits = await res.json();
+        const data = await res.json();
 
-        table.innerHTML = "";
+if (!data.success) {
+    alert(data.message);
+    return;
+}
 
-        deposits.forEach(item => {
+table.innerHTML = "";
+
+data.deposits.forEach(item => {
 
             table.innerHTML += `
             <tr>
@@ -62,10 +67,10 @@ async function loadDeposits() {
 
     } catch (err) {
 
-        console.log(err);
-        alert("Server Error");
+    console.error(err);
+    alert(err.message);
 
-    }
+}
 
 }
 
