@@ -830,8 +830,17 @@ router.post("/deposit/approve/:id", async (req, res) => {
 
         if (user) {
 
-            user.balance += deposit.amount;
-            await user.save();
+            if (!user) {
+    return res.json({
+        success: false,
+        message: "User not found."
+    });
+}
+
+// Add deposited money to wallet
+user.balance = Number(user.balance || 0) + Number(deposit.amount);
+
+await user.save();
 
             const depositTransaction = new Transaction({
 
