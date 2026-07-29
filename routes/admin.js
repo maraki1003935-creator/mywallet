@@ -49,11 +49,17 @@ message:"Invalid Token"
 
 }
 
-router.get("/deposits", async (req, res) => {
+// ======================================
+// GET ALL DEPOSITS
+// ======================================
+
+router.get("/deposits", verifyAdmin, async (req, res) => {
 
     try {
 
-        const deposits = await Deposit.find().sort({ createdAt: -1 });
+        const deposits = await Deposit.find().sort({
+            createdAt: -1
+        });
 
         res.json(deposits);
 
@@ -70,65 +76,155 @@ router.get("/deposits", async (req, res) => {
 
 });
 
+// ======================================
+// APPROVE DEPOSIT
+// ======================================
 
-
-// Reject Deposit
-router.post("/deposit/reject/:id", async (req, res) => {
+router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
 
     try {
 
         const deposit = await Deposit.findById(req.params.id);
 
         if (!deposit) {
-
             return res.json({
                 success: false,
                 message: "Deposit not found."
             });
-
         }
 
-        if (deposit.status === "Rejected") {
-
+        if (deposit.status === "Approved") {
             return res.json({
                 success: false,
-                message: "Deposit already rejected."
+                message: "Deposit already approved."
             });
+        }
+
+        const user = await User.findOne({
+            phone: deposit.phone
+        });
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User not found."
+            });
+        }
+
+        deposit.status = "Approved";
+        await deposit.save();
+
+        // Add deposited amount
+        user.balance += Number(deposit.amount);
+
+        // Referral Bonus
+        if (user.referredBy && !user.referralPaid) {
+
+            const referrer = await User.findOne({
+                referralCode: user.referredBy
+            });
+
+            if (referrer) {
+
+                referrer.balance += 600;
+                referrer.referralEarnings += 600;
+                referrer.invitedUsers += 1;
+
+                await referrer.save();
+
+                user.referralPaid = true;
+
+                await Transaction.create({
+                    phone: referrer.phone,
+                    type: "Referral Bonus",
+                    amount: 600,
+                    status: "Completed",
+                    reference: user.phone
+                });
+
+                await Notification.create({
+                    phone: referrer.phone,
+                    title: "Referral Bonus",
+                    message: "600 ETB referral bonus added."
+                });
+
+            }
 
         }
 
-        deposit.status = "Rejected";
+        await user.save();
 
-        await deposit.save(); const notification = new Notification({
+        await Transaction.create({
+            phone: user.phone,
+            type: "Deposit",
+            amount: deposit.amount,
+            status: "Completed",
+            reference: deposit._id.toString()
+        });
 
-    phone: deposit.phone,
-
-    title: "Deposit Rejected",
-
-    message: "Your deposit request has been rejected."
-
-});
-
-await notification.save();
+        await Notification.create({
+            phone: user.phone,
+            title: "Deposit Approved",
+            message: deposit.amount + " ETB has been added to your balance."
+        });
 
         res.json({
-
             success: true,
-
-            message: "Deposit rejected successfully."
-
+            message: "Deposit approved successfully."
         });
 
     } catch (err) {
 
         console.log(err);
 
-        res.json({
-
+        res.status(500).json({
             success: false,
-
             message: err.message
+        });
 
+    }
+
+});
+
+// ======================================
+// REJECT DEPOSIT
+// ======================================
+
+router.post("/deposit/reject/:id", verifyAdmin, async (req, res) => {
+
+    try {
+
+        const deposit = await Deposit.findById(req.params.id);
+
+        if (!deposit) {
+            return res.json({
+                success: false,
+                message: "Deposit not found."
+            });
+        }
+
+        deposit.status = "Rejected";
+
+        await deposit.save();
+
+        await Notification.create({
+            phone: deposit.phone,
+            title: "Deposit Rejected",
+            message: "Your deposit request has been rejected."
+        });
+
+        res.json({
+            success: true,
+            message: "Deposit rejected successfully."
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
         });
 
     }
