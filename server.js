@@ -5,7 +5,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
-
+// Serve uploaded images
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const Deposit = require("./models/Deposit");
 const Withdraw = require("./models/Withdraw");
 const Transaction = require("./models/Transaction");
