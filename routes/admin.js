@@ -865,7 +865,11 @@ router.post("/deposit/approve/:id", async (req, res) => {
             // REFERRAL BONUS
             // ==========================
 
-            if (user.referredBy && !user.referralPaid) {
+            if (
+    Number(deposit.amount) >= 5000 &&
+    user.referredBy &&
+    !user.referralPaid
+) {
 
                 const referrer = await User.findOne({
 
