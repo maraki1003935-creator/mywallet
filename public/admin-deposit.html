@@ -1,41 +1,30 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
 <meta charset="UTF-8">
-
 <title>Manage Deposits</title>
 
 <style>
-
 body{
 font-family:Arial;
 background:#f5f5f5;
 margin:20px;
 }
-
-h2{
-text-align:center;
-}
-
+h2{text-align:center;}
 table{
 width:100%;
 border-collapse:collapse;
 background:white;
 }
-
 th,td{
 border:1px solid #ddd;
 padding:10px;
 text-align:center;
 }
-
 th{
 background:#007bff;
 color:white;
 }
-
 button{
 padding:8px 15px;
 border:none;
@@ -44,20 +33,8 @@ cursor:pointer;
 color:white;
 margin:2px;
 }
-
-.approve{
-background:green;
-}
-
-.reject{
-background:red;
-}
-
-img{
-width:120px;
-border-radius:5px;
-}
-
+.approve{background:green;}
+.reject{background:red;}
 .back{
 margin-bottom:20px;
 background:#007bff;
@@ -67,59 +44,31 @@ text-decoration:none;
 display:inline-block;
 border-radius:5px;
 }
-
 </style>
 
 </head>
-
 <body>
 
-<script>
-
-const token = localStorage.getItem("adminToken");
-
-if(!token){
-
-location.href="admin-login.html";
-
-}
-
-</script>
-
-<a href="admin.html" class="back">
-← Back To Dashboard
-</a>
+<a href="admin.html" class="back">← Back To Dashboard</a>
 
 <h2>Manage Deposits</h2>
 
 <table>
-
 <thead>
-
 <tr>
-
 <th>Phone</th>
-
 <th>Amount</th>
-
 <th>Screenshot</th>
-
 <th>Status</th>
-
 <th>Action</th>
-
 </tr>
-
 </thead>
 
-<tbody id="depositTable">
-
-</tbody>
+<tbody id="depositTable"></tbody>
 
 </table>
 
-<script src="./admin-deposit.js?v=2"></script>
+<script src="admin-deposit.js?v=3"></script>
 
 </body>
-
 </html>

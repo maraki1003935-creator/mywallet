@@ -1,6 +1,6 @@
 const table = document.getElementById("depositTable");
 
-const token = localStorage.getItem("adminToken");
+let token = localStorage.getItem("adminToken");
 
 if (!token) {
     location.href = "admin-login.html";
