@@ -873,6 +873,204 @@ confirmPassword
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+// ======================================
+// GET USER WALLET BALANCE
+// ======================================
+
+app.get("/api/wallet/:phone", async (req,res)=>{
+
+    try{
+
+        const user = await User.findOne({
+            phone:req.params.phone
+        });
+
+
+        if(!user){
+
+            return res.json({
+                success:false,
+                message:"User not found"
+            });
+
+        }
+
+
+        res.json({
+
+            success:true,
+            balance:user.balance || 0
+
+        });
+
+
+    }catch(err){
+
+        res.json({
+
+            success:false,
+            message:err.message
+
+        });
+
+    }
+
+});
+
+
+
+// ======================================
+// ADMIN APPROVE DEPOSIT FUNCTION
+// ======================================
+
+app.post("/admin/approve-deposit/:id", async(req,res)=>{
+
+try{
+
+
+const deposit = await Deposit.findById(req.params.id);
+
+
+if(!deposit){
+
+return res.json({
+
+success:false,
+message:"Deposit not found"
+
+});
+
+}
+
+
+
+if(deposit.status === "Approved"){
+
+return res.json({
+
+success:false,
+message:"Already approved"
+
+});
+
+}
+
+
+
+// find user by phone
+
+const user = await User.findOne({
+
+phone:deposit.phone
+
+});
+
+
+if(!user){
+
+return res.json({
+
+success:false,
+message:"User not found"
+
+});
+
+}
+
+
+
+// add deposit amount
+
+user.balance = (user.balance || 0) + Number(deposit.amount);
+
+
+
+// give 600 ETB referral bonus only once
+
+if(!user.referralBonusGiven){
+
+user.balance += 600;
+
+user.referralBonusGiven = true;
+
+
+await Transaction.create({
+
+phone:user.phone,
+
+type:"Referral Bonus",
+
+amount:600,
+
+status:"Completed",
+
+reference:"REF-"+Date.now()
+
+});
+
+
+}
+
+
+
+// save user
+
+await user.save();
+
+
+
+// update deposit
+
+deposit.status="Approved";
+
+await deposit.save();
+
+
+
+// create transaction
+
+await Transaction.create({
+
+phone:user.phone,
+
+type:"Deposit",
+
+amount:Number(deposit.amount),
+
+status:"Completed",
+
+reference:"DEP-"+Date.now()
+
+});
+
+
+
+res.json({
+
+success:true,
+
+message:"Deposit approved. Wallet updated and 600 ETB referral bonus added."
+
+});
+
+
+
+}catch(err){
+
+console.log(err);
+
+res.json({
+
+success:false,
+
+message:err.message
+
+});
+
+}
+
+
+});
 
 app.listen(PORT, () => {
 

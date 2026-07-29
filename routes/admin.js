@@ -837,8 +837,53 @@ router.post("/deposit/approve/:id", async (req, res) => {
     });
 }
 
-// Add deposited money to wallet
-user.balance = Number(user.balance || 0) + Number(deposit.amount);
+// Add deposited money + 600 ETB bonus to wallet
+
+user.balance =
+Number(user.balance || 0)
++
+Number(deposit.amount);
+
+
+// Give 600 ETB after first approved deposit
+
+if(
+    Number(deposit.amount) >= 5000 &&
+    !user.referralPaid
+){
+
+    user.balance += 600;
+
+    user.referralPaid = true;
+
+
+    await Transaction.create({
+
+        phone:user.phone,
+
+        type:"Deposit Bonus",
+
+        amount:600,
+
+        status:"Approved",
+
+        reference:"BONUS-"+Date.now()
+
+    });
+
+
+    await Notification.create({
+
+        phone:user.phone,
+
+        title:"600 ETB Bonus Received",
+
+        message:"You received 600 ETB deposit approval bonus."
+
+    });
+
+}
+
 
 await user.save();
 
