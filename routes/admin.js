@@ -822,7 +822,16 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
         // Find the exact user who made the deposit
         const user = await User.findOne({
             phone: deposit.phone
-        });
+        }); console.log("===== DEPOSIT BALANCE DEBUG =====");
+console.log("Deposit phone:", deposit.phone);
+console.log("User found:", user ? "YES" : "NO");
+
+if (user) {
+    console.log("User phone:", user.phone);
+    console.log("Old balance:", user.balance);
+    console.log("Deposit amount:", deposit.amount);
+}
+console.log("=================================");
 
         if (!user) {
             return res.json({
@@ -867,6 +876,20 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
         // ======================================
 
         await user.save();
+        console.log("===== AFTER BALANCE SAVE =====");
+console.log("Phone:", user.phone);
+console.log("New balance:", user.balance);
+
+const checkUser = await User.findOne({
+    phone: user.phone
+});
+
+console.log(
+    "Balance read again from MongoDB:",
+    checkUser ? checkUser.balance : "USER NOT FOUND"
+);
+
+console.log("==============================");
 
         // ======================================
         // APPROVE DEPOSIT
