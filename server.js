@@ -1081,6 +1081,67 @@ message:err.message
 
 
 });
+// ======================================
+// GET REAL USER BALANCE
+// ======================================
+
+app.get("/api/wallet/:phone", async (req, res) => {
+
+    try {
+
+        const phone = decodeURIComponent(req.params.phone).trim();
+
+        console.log("================================");
+        console.log("WALLET REQUEST");
+        console.log("PHONE:", phone);
+
+        const user = await User.findOne({
+            phone: phone
+        });
+
+        if (!user) {
+
+            console.log("USER NOT FOUND");
+
+            return res.json({
+                success: false,
+                balance: 0,
+                message: "User not found"
+            });
+
+        }
+
+        console.log("USER FOUND:", user.phone);
+        console.log("DATABASE BALANCE:", user.balance);
+        console.log("================================");
+
+        return res.json({
+
+            success: true,
+
+            phone: user.phone,
+
+            balance: Number(user.balance || 0)
+
+        });
+
+    } catch (error) {
+
+        console.error("WALLET ERROR:", error);
+
+        return res.status(500).json({
+
+            success: false,
+
+            balance: 0,
+
+            message: "Wallet error"
+
+        });
+
+    }
+
+});
 
 app.listen(PORT, () => {
 

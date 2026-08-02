@@ -1,219 +1,74 @@
 // ======================================
-// GET USER PHONE
-// ======================================
-
-function getUserPhone() {
-
-    const phone = localStorage.getItem("phone");
-
-    if (!phone) {
-
-        console.log("Phone number not found.");
-
-        return null;
-    }
-
-    return phone;
-}
-
-
-
-// ======================================
-// LOAD USER WALLET BALANCE
+// LOAD USER BALANCE
 // ======================================
 
 async function loadWallet() {
 
-    const phone = getUserPhone();
+    const phone = localStorage.getItem("phone");
+
+    console.log("PHONE FROM LOCAL STORAGE:", phone);
 
     if (!phone) {
 
-        const balanceElement =
-            document.getElementById("balance");
-
-        if (balanceElement) {
-
-            balanceElement.innerText = "0 ETB";
-
-        }
+        document.getElementById("balance").innerText =
+            "0 ETB";
 
         return;
     }
 
     try {
 
-        const response = await fetch(
+        const url =
             "/api/wallet/" +
-            encodeURIComponent(phone)
-        );
+            encodeURIComponent(phone);
+
+        console.log("REQUESTING:", url);
+
+        const response = await fetch(url);
 
         const data = await response.json();
 
-        console.log("Wallet response:", data);
-
-        if (!data.success) {
-
-            console.log(
-                "Wallet error:",
-                data.message
-            );
-
-            return;
-        }
-
-        const balance =
-            Number(data.balance || 0);
-
-        const balanceElement =
-            document.getElementById("balance");
-
-        if (balanceElement) {
-
-            balanceElement.innerText =
-                balance.toLocaleString() +
-                " ETB";
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Failed to load wallet:",
-            error
-        );
-
-    }
-
-}
-
-
-
-// ======================================
-// SUBMIT DEPOSIT
-// ======================================
-
-async function deposit() {
-
-    const phone = getUserPhone();
-
-    if (!phone) {
-
-        document.getElementById("message").innerText =
-            "Please login first.";
-
-        return;
-    }
-
-
-    const amount =
-        Number(
-            document.getElementById("amount").value
-        );
-
-
-    const txid =
-        document
-            .getElementById("txid")
-            .value
-            .trim();
-
-
-    // ==================================
-    // VALIDATE AMOUNT
-    // ==================================
-
-    if (!amount || amount < 5000) {
-
-        document.getElementById("message").innerText =
-            "Minimum deposit is 5000 ETB.";
-
-        return;
-    }
-
-
-    if (amount > 300000) {
-
-        document.getElementById("message").innerText =
-            "Maximum deposit is 300000 ETB.";
-
-        return;
-    }
-
-
-    if (!txid) {
-
-        document.getElementById("message").innerText =
-            "Please enter your Telebirr TXID.";
-
-        return;
-    }
-
-
-    try {
-
-        const response = await fetch(
-            "/deposit",
-            {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    phone: phone,
-
-                    amount: amount,
-
-                    txid: txid
-
-                })
-
-            }
-        );
-
-
-        const data =
-            await response.json();
-
-
-        document.getElementById("message").innerText =
-            data.message;
-
+        console.log("WALLET DATA:", data);
 
         if (data.success) {
 
-            document.getElementById("amount").value = "";
+            const balance =
+                Number(data.balance || 0);
 
-            document.getElementById("txid").value = "";
+            document.getElementById("balance").innerText =
+                balance.toLocaleString() + " ETB";
+
+        } else {
+
+            document.getElementById("balance").innerText =
+                "0 ETB";
+
+            console.log(
+                "Wallet message:",
+                data.message
+            );
 
         }
 
     } catch (error) {
 
         console.error(
-            "Deposit error:",
+            "BALANCE LOAD ERROR:",
             error
         );
-
-        document.getElementById("message").innerText =
-            "Unable to submit deposit.";
 
     }
 
 }
 
 
-
 // ======================================
-// INITIAL LOAD
+// START
 // ======================================
 
 document.addEventListener(
     "DOMContentLoaded",
-    function () {
+    () => {
 
         loadWallet();
 
@@ -221,12 +76,11 @@ document.addEventListener(
 );
 
 
-
 // ======================================
-// AUTOMATIC BALANCE REFRESH
+// REFRESH EVERY 5 SECONDS
 // ======================================
 
 setInterval(
     loadWallet,
-    10000
+    5000
 );
