@@ -795,7 +795,7 @@ router.post("/user/block/:id", async (req, res) => {
 });
 // ======================================
 // APPROVE DEPOSIT
-// ADD DEPOSIT + 600 ETB BONUS TO USER BALANCE
+// ADD MONEY + 600 BONUS TO USER WALLET
 // ======================================
 
 router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
@@ -811,6 +811,7 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
             });
         }
 
+        // Prevent double approval
         if (deposit.status === "Approved") {
             return res.json({
                 success: false,
@@ -826,7 +827,7 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
         if (!user) {
             return res.json({
                 success: false,
-                message: "User not found for phone: " + deposit.phone
+                message: "User not found: " + deposit.phone
             });
         }
 
@@ -840,15 +841,13 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
         }
 
         // ======================================
-        // ADD DEPOSIT TO USER BALANCE
+        // ADD DEPOSIT MONEY TO THIS USER
         // ======================================
 
-        const oldBalance = Number(user.balance || 0);
-
-        user.balance = oldBalance + depositAmount;
+        user.balance = Number(user.balance || 0) + depositAmount;
 
         // ======================================
-        // ADD 600 ETB BONUS ONLY ONCE
+        // ADD 600 ETB BONUS TO THIS USER
         // ======================================
 
         let bonus = 0;
@@ -857,17 +856,20 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
 
             bonus = 600;
 
-            user.balance = Number(user.balance) + bonus;
+            user.balance =
+                Number(user.balance || 0) + 600;
 
             user.referralPaid = true;
-
         }
 
-        // SAVE THE UPDATED USER BALANCE
+        // ======================================
+        // SAVE USER
+        // ======================================
+
         await user.save();
 
         // ======================================
-        // MARK DEPOSIT APPROVED
+        // APPROVE DEPOSIT
         // ======================================
 
         deposit.status = "Approved";
@@ -915,7 +917,7 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
         }
 
         // ======================================
-        // NOTIFICATION
+        // NOTIFICATION TO USER
         // ======================================
 
         await Notification.create({
@@ -926,32 +928,30 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
 
             message:
                 depositAmount +
-                " ETB deposit approved. " +
+                " ETB was added to your wallet." +
                 (bonus === 600
-                    ? "600 ETB bonus also added."
+                    ? " You also received 600 ETB bonus."
                     : "")
 
         });
 
         // ======================================
-        // RETURN ACTUAL NEW BALANCE
+        // RESPONSE
         // ======================================
 
         res.json({
 
             success: true,
 
-            message: "Deposit approved successfully.",
+            message: "Deposit approved and money added to user's wallet.",
 
-            phone: user.phone,
+            userPhone: user.phone,
 
-            oldBalance: oldBalance,
-
-            deposit: depositAmount,
+            depositAmount: depositAmount,
 
             bonus: bonus,
 
-            newBalance: Number(user.balance)
+            newBalance: user.balance
 
         });
 
