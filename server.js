@@ -881,15 +881,20 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
     try {
 
+        const phone = req.params.phone;
+
         const user = await User.findOne({
-            phone: req.params.phone
+            phone: phone
         });
 
         if (!user) {
 
-            return res.json({
+            return res.status(404).json({
+
                 success: false,
+
                 message: "User not found."
+
             });
 
         }
@@ -906,20 +911,22 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
     } catch (err) {
 
-        console.log("WALLET ERROR:", err);
+        console.log(
+            "WALLET BALANCE ERROR:",
+            err
+        );
 
         res.status(500).json({
 
             success: false,
 
-            message: err.message
+            message: "Could not load wallet balance."
 
         });
 
     }
 
 });
-
 
 
 // ======================================

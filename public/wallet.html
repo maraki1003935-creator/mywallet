@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>My Wallet</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+    <h1>Wallet Dashboard</h1>
+
+    <!-- ============================== -->
+    <!-- CURRENT BALANCE -->
+    <!-- ============================== -->
+
+    <div>
+
+        <h2>Current Balance</h2>
+
+        <h1 id="balance">Loading...</h1>
+
+    </div>
+
+
+    <!-- ============================== -->
+    <!-- DEPOSIT -->
+    <!-- ============================== -->
+
+    <div>
+
+        <h2>Deposit</h2>
+
+        <p>
+            Send money to Telebirr:
+            <strong>0904489434</strong>
+        </p>
+
+        <input
+            type="number"
+            id="amount"
+            placeholder="Amount"
+        >
+
+        <br><br>
+
+        <input
+            type="text"
+            id="txid"
+            placeholder="Telebirr TXID"
+        >
+
+        <br><br>
+
+        <button onclick="deposit()">
+            Submit Deposit
+        </button>
+
+        <p id="message"></p>
+
+    </div>
+
+
+    <!-- ============================== -->
+    <!-- NAVIGATION -->
+    <!-- ============================== -->
+
+    <div>
+
+        <a href="home.html">
+            Home
+        </a>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
