@@ -877,39 +877,42 @@ app.get("/", (req, res) => {
 // GET USER WALLET BALANCE
 // ======================================
 
-app.get("/api/wallet/:phone", async (req,res)=>{
+app.get("/api/wallet/:phone", async (req, res) => {
 
-    try{
+    try {
 
         const user = await User.findOne({
-            phone:req.params.phone
+            phone: req.params.phone
         });
 
-
-        if(!user){
+        if (!user) {
 
             return res.json({
-                success:false,
-                message:"User not found"
+                success: false,
+                message: "User not found."
             });
 
         }
 
-
         res.json({
 
-            success:true,
-            balance:user.balance || 0
+            success: true,
+
+            phone: user.phone,
+
+            balance: Number(user.balance || 0)
 
         });
 
+    } catch (err) {
 
-    }catch(err){
+        console.log("WALLET ERROR:", err);
 
-        res.json({
+        res.status(500).json({
 
-            success:false,
-            message:err.message
+            success: false,
+
+            message: err.message
 
         });
 
