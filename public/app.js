@@ -1,59 +1,53 @@
 // ======================================
-// LOAD USER BALANCE
+// LOAD PRIVATE WALLET BALANCE
 // ======================================
 
 async function loadWallet() {
 
     const phone = localStorage.getItem("phone");
 
-    console.log("PHONE FROM LOCAL STORAGE:", phone);
-
     if (!phone) {
 
-        document.getElementById("balance").innerText =
-            "0 ETB";
+        console.log("No logged-in phone.");
 
         return;
     }
 
     try {
 
-        const url =
+        const response = await fetch(
             "/api/wallet/" +
-            encodeURIComponent(phone);
-
-        console.log("REQUESTING:", url);
-
-        const response = await fetch(url);
+            encodeURIComponent(phone)
+        );
 
         const data = await response.json();
 
-        console.log("WALLET DATA:", data);
+        console.log("PRIVATE WALLET:", data);
 
-        if (data.success) {
+        if (!data.success) {
 
-            const balance =
-                Number(data.balance || 0);
+            console.log(data.message);
 
-            document.getElementById("balance").innerText =
+            return;
+        }
+
+        const balance =
+            Number(data.balance || 0);
+
+        const balanceElement =
+            document.getElementById("balance");
+
+        if (balanceElement) {
+
+            balanceElement.textContent =
                 balance.toLocaleString() + " ETB";
-
-        } else {
-
-            document.getElementById("balance").innerText =
-                "0 ETB";
-
-            console.log(
-                "Wallet message:",
-                data.message
-            );
 
         }
 
     } catch (error) {
 
         console.error(
-            "BALANCE LOAD ERROR:",
+            "Private wallet error:",
             error
         );
 
@@ -63,24 +57,20 @@ async function loadWallet() {
 
 
 // ======================================
-// START
+// LOAD WHEN PAGE OPENS
 // ======================================
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
-
-        loadWallet();
-
-    }
+    loadWallet
 );
 
 
 // ======================================
-// REFRESH EVERY 5 SECONDS
+// AUTOMATICALLY UPDATE BALANCE
 // ======================================
 
 setInterval(
     loadWallet,
-    5000
+    3000
 );

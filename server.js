@@ -1142,6 +1142,49 @@ app.get("/api/wallet/:phone", async (req, res) => {
     }
 
 });
+// ======================================
+// USER PRIVATE WALLET BALANCE
+// ======================================
+
+app.get("/api/wallet/:phone", async (req, res) => {
+
+    try {
+
+        const phone = decodeURIComponent(
+            req.params.phone
+        ).trim();
+
+        const user = await User.findOne({
+            phone: phone
+        });
+
+        if (!user) {
+
+            return res.status(404).json({
+                success: false,
+                message: "User not found."
+            });
+
+        }
+
+        res.json({
+            success: true,
+            phone: user.phone,
+            balance: Number(user.balance || 0)
+        });
+
+    } catch (err) {
+
+        console.error("Wallet balance error:", err);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to load wallet balance."
+        });
+
+    }
+
+});
 
 app.listen(PORT, () => {
 
