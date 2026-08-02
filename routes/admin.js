@@ -795,200 +795,182 @@ router.post("/user/block/:id", async (req, res) => {
 });
 // ======================================
 // APPROVE DEPOSIT
+// DEPOSIT AMOUNT + 600 ETB BONUS
 // ======================================
 
-router.post("/deposit/approve/:id", async (req, res) => {
+router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
 
     try {
 
+        // Find deposit
         const deposit = await Deposit.findById(req.params.id);
 
         if (!deposit) {
-
             return res.json({
                 success: false,
                 message: "Deposit not found."
             });
-
         }
 
+        // Prevent approving twice
         if (deposit.status === "Approved") {
-
             return res.json({
                 success: false,
                 message: "Deposit already approved."
             });
-
         }
 
-        deposit.status = "Approved";
-        await deposit.save();
-
+        // Find the USER who made this deposit
         const user = await User.findOne({
             phone: deposit.phone
         });
 
-        if (user) {
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User not found."
+            });
+        }
 
-            if (!user) {
-    return res.json({
-        success: false,
-        message: "User not found."
-    });
-}
+        // ======================================
+        // CALCULATE MONEY TO ADD
+        // ======================================
 
-// Add deposited money + 600 ETB bonus to wallet
+        const depositAmount = Number(deposit.amount);
 
-user.balance =
-Number(user.balance || 0)
-+
-Number(deposit.amount);
+        if (depositAmount < 5000) {
+            return res.json({
+                success: false,
+                message: "Deposit must be at least 5000 ETB."
+            });
+        }
 
+        // ======================================
+        // ADD DEPOSIT MONEY TO USER WALLET
+        // ======================================
 
-// Give 600 ETB after first approved deposit
+        user.balance = Number(user.balance || 0) + depositAmount;
 
-if(
-    Number(deposit.amount) >= 5000 &&
-    !user.referralPaid
-){
+        // ======================================
+        // ADD 600 ETB BONUS
+        // ONLY ONCE
+        // ======================================
 
-    user.balance += 600;
+        let bonusAdded = false;
 
-    user.referralPaid = true;
+        if (!user.referralPaid) {
 
+            user.balance = Number(user.balance || 0) + 600;
 
-    await Transaction.create({
+            user.referralPaid = true;
 
-        phone:user.phone,
+            bonusAdded = true;
 
-        type:"Deposit Bonus",
+        }
 
-        amount:600,
+        // ======================================
+        // SAVE USER BALANCE
+        // ======================================
 
-        status:"Approved",
+        await user.save();
 
-        reference:"BONUS-"+Date.now()
+        // ======================================
+        // MARK DEPOSIT APPROVED
+        // ======================================
 
-    });
+        deposit.status = "Approved";
 
+        await deposit.save();
 
-    await Notification.create({
+        // ======================================
+        // DEPOSIT TRANSACTION
+        // ======================================
 
-        phone:user.phone,
+        await Transaction.create({
 
-        title:"600 ETB Bonus Received",
+            phone: user.phone,
 
-        message:"You received 600 ETB deposit approval bonus."
+            type: "Deposit",
 
-    });
+            amount: depositAmount,
 
-}
+            status: "Approved",
 
+            reference: "DEP-" + deposit._id
 
-await user.save();
+        });
 
-            const depositTransaction = new Transaction({
+        // ======================================
+        // 600 ETB BONUS TRANSACTION
+        // ======================================
+
+        if (bonusAdded) {
+
+            await Transaction.create({
 
                 phone: user.phone,
 
-                type: "Deposit",
+                type: "Deposit Bonus",
 
-                amount: deposit.amount,
+                amount: 600,
 
                 status: "Approved",
 
-                reference: deposit._id.toString()
+                reference: "BONUS-" + deposit._id
 
             });
-
-            await depositTransaction.save();
-
-            const notification = new Notification({
-
-                phone: user.phone,
-
-                title: "Deposit Approved",
-
-                message: deposit.amount + " ETB has been added to your balance."
-
-            });
-
-            await notification.save();
-
-            // ==========================
-            // REFERRAL BONUS
-            // ==========================
-
-            if (
-    Number(deposit.amount) >= 5000 &&
-    user.referredBy &&
-    !user.referralPaid
-) {
-
-                const referrer = await User.findOne({
-
-                    referralCode: user.referredBy
-
-                });
-
-                if (referrer) {
-
-                    referrer.balance += 600;
-                    referrer.referralEarnings += 600;
-                    referrer.invitedUsers += 1;
-
-                    await referrer.save();
-
-                    user.referralPaid = true;
-                    await user.save();
-
-                    const referralTransaction = new Transaction({
-
-                        phone: referrer.phone,
-
-                        type: "Referral Bonus",
-
-                        amount: 600,
-
-                        status: "Approved",
-
-                        reference: user.phone
-
-                    });
-
-                    await referralTransaction.save();
-
-                    const referralNotification = new Notification({
-
-                        phone: referrer.phone,
-
-                        title: "Referral Bonus",
-
-                        message: "You received 600 ETB because " + user.phone + " made their first approved deposit."
-
-                    });
-
-                    await referralNotification.save();
-
-                }
-
-            }
 
         }
+
+        // ======================================
+        // USER NOTIFICATION
+        // ======================================
+
+        let notificationMessage =
+            depositAmount +
+            " ETB deposit has been approved and added to your wallet.";
+
+        if (bonusAdded) {
+
+            notificationMessage +=
+                " You also received a 600 ETB bonus.";
+
+        }
+
+        await Notification.create({
+
+            phone: user.phone,
+
+            title: "Deposit Approved",
+
+            message: notificationMessage
+
+        });
+
+        // ======================================
+        // RESPONSE
+        // ======================================
 
         res.json({
 
             success: true,
 
-            message: "Deposit approved successfully."
+            message:
+                "Deposit approved successfully. " +
+                depositAmount +
+                " ETB deposit and " +
+                (bonusAdded ? "600 ETB bonus " : "") +
+                "added to user's wallet.",
+
+            balance: user.balance
 
         });
 
     } catch (err) {
 
-        console.log(err);
+        console.log("APPROVE DEPOSIT ERROR:", err);
 
-        res.json({
+        res.status(500).json({
 
             success: false,
 
