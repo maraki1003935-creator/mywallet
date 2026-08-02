@@ -870,8 +870,85 @@ confirmPassword
     }
 
 });
+// ======================================
+// GET PRIVATE USER WALLET BALANCE
+// ======================================
+
+app.get("/api/wallet/:phone", async (req, res) => {
+
+    try {
+
+        const phone = decodeURIComponent(req.params.phone).trim();
+
+        console.log("WALLET REQUEST FOR PHONE:", phone);
+
+        const user = await User.findOne({
+            phone: phone
+        });
+
+        if (!user) {
+
+            console.log("WALLET USER NOT FOUND:", phone);
+
+            return res.json({
+                success: false,
+                balance: 0,
+                message: "User not found."
+            });
+
+        }
+
+        console.log(
+            "WALLET USER:",
+            user.phone,
+            "BALANCE:",
+            user.balance
+        );
+
+        return res.json({
+            success: true,
+            phone: user.phone,
+            balance: Number(user.balance || 0)
+        });
+
+    } catch (err) {
+
+        console.log("WALLET ERROR:", err);
+
+        return res.status(500).json({
+            success: false,
+            balance: 0,
+            message: "Server error."
+        });
+
+    }
+
+});
+
+
+// ======================================
+// HOME PAGE
+// ======================================
+
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+
+    res.sendFile(
+        path.join(__dirname, "public", "index.html")
+    );
+
+});
+
+
+// ======================================
+// START SERVER
+// ======================================
+
+app.listen(PORT, () => {
+
+    console.log(
+        "Server running on http://localhost:" + PORT
+    );
+
 });
 // ======================================
 // GET USER WALLET BALANCE
