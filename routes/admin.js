@@ -795,7 +795,7 @@ router.post("/user/block/:id", async (req, res) => {
 });
 // ======================================
 // APPROVE DEPOSIT
-// ADD MONEY + 600 BONUS TO USER WALLET
+// ADD DEPOSIT MONEY + 600 ETB BONUS
 // ======================================
 
 router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
@@ -811,7 +811,7 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
             });
         }
 
-        // Prevent double approval
+        // Prevent approving the same deposit twice
         if (deposit.status === "Approved") {
             return res.json({
                 success: false,
@@ -819,19 +819,10 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
             });
         }
 
-        // Find the exact user who made the deposit
+        // Find the user who made this deposit
         const user = await User.findOne({
             phone: deposit.phone
-        }); console.log("===== DEPOSIT BALANCE DEBUG =====");
-console.log("Deposit phone:", deposit.phone);
-console.log("User found:", user ? "YES" : "NO");
-
-if (user) {
-    console.log("User phone:", user.phone);
-    console.log("Old balance:", user.balance);
-    console.log("Deposit amount:", deposit.amount);
-}
-console.log("=================================");
+        });
 
         if (!user) {
             return res.json({
@@ -842,226 +833,93 @@ console.log("=================================");
 
         const depositAmount = Number(deposit.amount);
 
-        if (depositAmount < 5000) {
-            return res.json({
-                success: false,
-                message: "Minimum deposit is 5000 ETB."
-            });
-        }
-
-        // ======================================
-        // ADD DEPOSIT MONEY TO THIS USER
-        // ======================================
-
-        user.balance = Number(user.balance || 0) + depositAmount;
-
-        // ======================================
-        // ADD 600 ETB BONUS TO THIS USER
-        // ======================================
-
-        let bonus = 0;
-
-        if (!user.referralPaid) {
-
-            bonus = 600;
-
-            user.balance =
-                Number(user.balance || 0) + 600;
-
-            user.referralPaid = true;
-        }
-
-        // ======================================
-        // SAVE USER
-        // ======================================
-
-        await user.save();
-        console.log("===== AFTER BALANCE SAVE =====");
-console.log("Phone:", user.phone);
-console.log("New balance:", user.balance);
-
-const checkUser = await User.findOne({
-    phone: user.phone
-});
-
-console.log(
-    "Balance read again from MongoDB:",
-    checkUser ? checkUser.balance : "USER NOT FOUND"
-);
-
-console.log("==============================");
-
-        // ======================================
-// APPROVE DEPOSIT
-// ADD DEPOSIT + 600 ETB BONUS TO USER
-// ======================================
-
-router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
-
-    try {
-
-        console.log("======================================");
-        console.log("APPROVING DEPOSIT:", req.params.id);
-
-        // Find deposit
-        const deposit = await Deposit.findById(req.params.id);
-
-        if (!deposit) {
-
-            console.log("Deposit not found");
-
-            return res.json({
-                success: false,
-                message: "Deposit not found."
-            });
-
-        }
-
-        console.log("Deposit phone:", deposit.phone);
-        console.log("Deposit amount:", deposit.amount);
-        console.log("Deposit status:", deposit.status);
-
-        // Prevent approving same deposit twice
-        if (deposit.status === "Approved") {
-
-            return res.json({
-                success: false,
-                message: "Deposit already approved."
-            });
-
-        }
-
-        // ======================================
-        // FIND THE USER WHO MADE THIS DEPOSIT
-        // ======================================
-
-        const phone = String(deposit.phone).trim();
-
-        const user = await User.findOne({
-            phone: phone
-        });
-
-        console.log(
-            "USER FOUND:",
-            user ? "YES" : "NO"
-        );
-
-        if (!user) {
-
-            console.log(
-                "USER NOT FOUND FOR PHONE:",
-                phone
-            );
-
-            return res.json({
-                success: false,
-                message:
-                    "User account not found for phone: " + phone
-            });
-
-        }
-
-        console.log(
-            "USER PHONE:",
-            user.phone
-        );
-
-        console.log(
-            "OLD BALANCE:",
-            user.balance
-        );
-
-        // ======================================
-        // DEPOSIT AMOUNT
-        // ======================================
-
-        const depositAmount = Number(deposit.amount);
-
-        if (!Number.isFinite(depositAmount) || depositAmount < 5000) {
-
+        if (!Number.isFinite(depositAmount) || depositAmount <= 0) {
             return res.json({
                 success: false,
                 message: "Invalid deposit amount."
             });
-
         }
+
+        // ======================================
+        // SAVE OLD BALANCE
+        // ======================================
+
+        const oldBalance = Number(user.balance || 0);
+
+        // ======================================
+        // ADD DEPOSIT MONEY
+        // ======================================
+
+        user.balance = oldBalance + depositAmount;
 
         // ======================================
         // 600 ETB BONUS
         // ======================================
 
-        // Give 600 ETB bonus only once
         let bonus = 0;
 
-        if (!user.referralPaid) {
+        if (
+            depositAmount >= 5000 &&
+            user.referredBy &&
+            !user.referralPaid
+        ) {
 
-            bonus = 600;
+            const referrer = await User.findOne({
+                referralCode: user.referredBy
+            });
 
+            if (referrer) {
+
+                referrer.balance =
+                    Number(referrer.balance || 0) + 600;
+
+                referrer.referralEarnings =
+                    Number(referrer.referralEarnings || 0) + 600;
+
+                referrer.invitedUsers =
+                    Number(referrer.invitedUsers || 0) + 1;
+
+                await referrer.save();
+
+                user.referralPaid = true;
+
+                bonus = 600;
+
+                // Referral bonus transaction
+                await Transaction.create({
+
+                    phone: referrer.phone,
+
+                    type: "Referral Bonus",
+
+                    amount: 600,
+
+                    status: "Approved",
+
+                    reference: "BONUS-" + deposit._id
+
+                });
+
+                // Referral notification
+                await Notification.create({
+
+                    phone: referrer.phone,
+
+                    title: "Referral Bonus",
+
+                    message:
+                        "You received 600 ETB referral bonus."
+
+                });
+
+            }
         }
-
-        // ======================================
-        // CALCULATE NEW BALANCE
-        // ======================================
-
-        const oldBalance = Number(user.balance || 0);
-
-        const newBalance =
-            oldBalance +
-            depositAmount +
-            bonus;
-
-        console.log("OLD BALANCE:", oldBalance);
-        console.log("DEPOSIT:", depositAmount);
-        console.log("BONUS:", bonus);
-        console.log("NEW BALANCE:", newBalance);
 
         // ======================================
         // SAVE USER BALANCE
         // ======================================
 
-        user.balance = newBalance;
-
-        // Mark bonus as already given
-        if (bonus === 600) {
-
-            user.referralPaid = true;
-
-        }
-
         await user.save();
-
-        // ======================================
-        // VERIFY BALANCE WAS REALLY SAVED
-        // ======================================
-
-        const savedUser = await User.findOne({
-            phone: phone
-        });
-
-        console.log(
-            "BALANCE AFTER MONGODB SAVE:",
-            savedUser ? savedUser.balance : "USER NOT FOUND"
-        );
-
-        if (!savedUser) {
-
-            return res.status(500).json({
-                success: false,
-                message: "User disappeared after balance update."
-            });
-
-        }
-
-        if (Number(savedUser.balance) !== newBalance) {
-
-            console.log("BALANCE SAVE FAILED");
-
-            return res.status(500).json({
-                success: false,
-                message: "Balance was not saved correctly."
-            });
-
-        }
 
         // ======================================
         // MARK DEPOSIT APPROVED
@@ -1112,7 +970,7 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
         }
 
         // ======================================
-        // NOTIFICATION
+        // NOTIFY USER
         // ======================================
 
         await Notification.create({
@@ -1123,19 +981,33 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
 
             message:
                 depositAmount +
-                " ETB deposit was added to your wallet." +
-                (bonus === 600
-                    ? " You also received 600 ETB bonus."
-                    : "")
+                " ETB was added to your wallet." +
+                (
+                    bonus === 600
+                        ? " You also received 600 ETB bonus."
+                        : ""
+                )
 
         });
 
-        console.log(
-            "FINAL USER BALANCE:",
-            savedUser.balance
-        );
+        // ======================================
+        // VERIFY BALANCE FROM DATABASE
+        // ======================================
 
-        console.log("DEPOSIT APPROVED SUCCESSFULLY");
+        const savedUser = await User.findOne({
+            phone: user.phone
+        });
+
+        console.log("======================================");
+        console.log("DEPOSIT APPROVED");
+        console.log("PHONE:", user.phone);
+        console.log("DEPOSIT:", depositAmount);
+        console.log("BONUS:", bonus);
+        console.log("OLD BALANCE:", oldBalance);
+        console.log(
+            "NEW BALANCE:",
+            savedUser ? savedUser.balance : "USER NOT FOUND"
+        );
         console.log("======================================");
 
         return res.json({
@@ -1143,7 +1015,7 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
             success: true,
 
             message:
-                "Deposit approved. Money and bonus added to user's wallet.",
+                "Deposit approved. Money added to user's wallet.",
 
             phone: user.phone,
 
@@ -1151,16 +1023,16 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
 
             bonus: bonus,
 
-            balance: savedUser.balance
+            balance:
+                savedUser
+                    ? Number(savedUser.balance || 0)
+                    : 0
 
         });
 
     } catch (err) {
 
-        console.log(
-            "APPROVE DEPOSIT ERROR:",
-            err
-        );
+        console.log("APPROVE DEPOSIT ERROR:", err);
 
         return res.status(500).json({
 
@@ -1332,122 +1204,6 @@ router.get("/logins", async (req, res) => {
 // ===========================
 // ADMIN REPORTS
 // ===========================
-
-router.get("/reports", async(req,res)=>{
-
-try{
-
-const users = await User.countDocuments();
-
-const pendingDeposits =
-await Deposit.countDocuments({
-status:"Pending"
-});
-
-const pendingWithdrawals =
-await Withdraw.countDocuments({
-status:"Pending"
-});
-
-const deposits =
-await Deposit.find({
-status:"Approved"
-});
-
-const withdrawals =
-await Withdraw.find({
-status:"Approved"
-});
-
-let todayDeposits=0;
-
-let todayWithdrawals=0;
-
-let revenue=0;
-
-const today=new Date();
-
-deposits.forEach(item=>{
-
-const d=new Date(item.createdAt);
-
-if(
-d.toDateString()===today.toDateString()
-){
-
-todayDeposits+=item.amount;
-
-}
-
-revenue+=item.amount;
-
-});
-
-withdrawals.forEach(item=>{
-
-const d=new Date(item.createdAt);
-
-if(
-d.toDateString()===today.toDateString()
-){
-
-todayWithdrawals+=item.amount;
-
-}
-
-});
-
-const start=new Date();
-
-start.setHours(0,0,0,0);
-
-const newUsers=
-await User.countDocuments({
-
-createdAt:{
-$gte:start
-}
-
-});
-
-res.json({
-
-success:true,
-
-todayDeposits,
-
-todayWithdrawals,
-
-newUsers,
-
-revenue,
-
-pendingDeposits,
-
-pendingWithdrawals,
-
-totalUsers:users
-
-});
-
-}catch(err){
-
-console.log(err);
-
-res.json({
-
-success:false,
-
-message:err.message
-
-});
-
-}
-
-});
-// ===============================
-// EXPORT REPORT AS CSV
-// ===============================
 
 router.get("/reports/export", async (req, res) => {
 
