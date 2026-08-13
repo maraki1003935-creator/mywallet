@@ -1453,9 +1453,13 @@ router.get("/reports/export", async (req, res) => {
 
     try {
 
-        const deposits = await Deposit.find().sort({ createdAt: -1 });
+        const deposits = await Deposit.find().sort({
+            createdAt: -1
+        });
 
-        const withdrawals = await Withdraw.find().sort({ createdAt: -1 });
+        const withdrawals = await Withdraw.find().sort({
+            createdAt: -1
+        });
 
         let csv = "Type,Phone,Amount,Status,Reference,Date\n";
 
@@ -1472,6 +1476,7 @@ router.get("/reports/export", async (req, res) => {
         });
 
         res.setHeader("Content-Type", "text/csv");
+
         res.setHeader(
             "Content-Disposition",
             "attachment; filename=wallet-report.csv"
@@ -1488,6 +1493,5 @@ router.get("/reports/export", async (req, res) => {
     }
 
 });
-
 
 module.exports = router;
