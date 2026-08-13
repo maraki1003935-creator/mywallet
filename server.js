@@ -1227,17 +1227,13 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
     try {
 
-        const phone =
-            decodeURIComponent(req.params.phone).trim();
+        const phone = decodeURIComponent(
+            req.params.phone
+        ).trim();
 
-        console.log(
-            "======================================"
-        );
-
-        console.log(
-            "WALLET REQUEST PHONE:",
-            phone
-        );
+        console.log("=================================");
+        console.log("WALLET REQUEST");
+        console.log("PHONE FROM WEBSITE:", phone);
 
         const user = await User.findOne({
             phone: phone
@@ -1246,7 +1242,7 @@ app.get("/api/wallet/:phone", async (req, res) => {
         if (!user) {
 
             console.log(
-                "WALLET USER NOT FOUND:",
+                "USER NOT FOUND FOR WALLET:",
                 phone
             );
 
@@ -1254,23 +1250,21 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
                 success: false,
 
+                phone: phone,
+
                 balance: 0,
 
-                message: "User not found."
+                message:
+                    "User not found for phone: " +
+                    phone
 
             });
 
         }
 
-        console.log(
-            "WALLET USER:",
-            user.phone
-        );
-
-        console.log(
-            "WALLET BALANCE:",
-            user.balance
-        );
+        console.log("USER FOUND:", user.phone);
+        console.log("DATABASE BALANCE:", user.balance);
+        console.log("=================================");
 
         return res.json({
 
@@ -1278,7 +1272,9 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
             phone: user.phone,
 
-            balance: Number(user.balance || 0)
+            balance: Number(
+                user.balance || 0
+            )
 
         });
 
