@@ -1220,16 +1220,24 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
 });
 // ======================================
-// USER PRIVATE WALLET BALANCE
+// GET PRIVATE USER WALLET BALANCE
 // ======================================
 
 app.get("/api/wallet/:phone", async (req, res) => {
 
     try {
 
-        const phone = decodeURIComponent(
-            req.params.phone
-        ).trim();
+        const phone =
+            decodeURIComponent(req.params.phone).trim();
+
+        console.log(
+            "======================================"
+        );
+
+        console.log(
+            "WALLET REQUEST PHONE:",
+            phone
+        );
 
         const user = await User.findOne({
             phone: phone
@@ -1237,34 +1245,86 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
         if (!user) {
 
-            return res.status(404).json({
+            console.log(
+                "WALLET USER NOT FOUND:",
+                phone
+            );
+
+            return res.json({
+
                 success: false,
+
+                balance: 0,
+
                 message: "User not found."
+
             });
 
         }
 
-        res.json({
+        console.log(
+            "WALLET USER:",
+            user.phone
+        );
+
+        console.log(
+            "WALLET BALANCE:",
+            user.balance
+        );
+
+        return res.json({
+
             success: true,
+
             phone: user.phone,
+
             balance: Number(user.balance || 0)
+
         });
 
     } catch (err) {
 
-        console.error("Wallet balance error:", err);
+        console.log(
+            "WALLET ERROR:",
+            err
+        );
 
-        res.status(500).json({
+        return res.status(500).json({
+
             success: false,
-            message: "Unable to load wallet balance."
+
+            balance: 0,
+
+            message: "Server error."
+
         });
 
     }
 
 });
 
+
+// ======================================
+// HOME PAGE
+// ======================================
+
+app.get("/", (req, res) => {
+
+    res.sendFile(
+        path.join(__dirname, "public", "index.html")
+    );
+
+});
+
+
+// ======================================
+// START SERVER
+// ======================================
+
 app.listen(PORT, () => {
 
-    console.log("Server running on http://localhost:" + PORT);
+    console.log(
+        "Server running on http://localhost:" + PORT
+    );
 
 });

@@ -892,7 +892,179 @@ console.log(
 console.log("==============================");
 
         // ======================================
-        // APPROVE DEPOSIT
+// APPROVE DEPOSIT
+// ADD DEPOSIT + 600 ETB BONUS TO USER
+// ======================================
+
+router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
+
+    try {
+
+        console.log("======================================");
+        console.log("APPROVING DEPOSIT:", req.params.id);
+
+        // Find deposit
+        const deposit = await Deposit.findById(req.params.id);
+
+        if (!deposit) {
+
+            console.log("Deposit not found");
+
+            return res.json({
+                success: false,
+                message: "Deposit not found."
+            });
+
+        }
+
+        console.log("Deposit phone:", deposit.phone);
+        console.log("Deposit amount:", deposit.amount);
+        console.log("Deposit status:", deposit.status);
+
+        // Prevent approving same deposit twice
+        if (deposit.status === "Approved") {
+
+            return res.json({
+                success: false,
+                message: "Deposit already approved."
+            });
+
+        }
+
+        // ======================================
+        // FIND THE USER WHO MADE THIS DEPOSIT
+        // ======================================
+
+        const phone = String(deposit.phone).trim();
+
+        const user = await User.findOne({
+            phone: phone
+        });
+
+        console.log(
+            "USER FOUND:",
+            user ? "YES" : "NO"
+        );
+
+        if (!user) {
+
+            console.log(
+                "USER NOT FOUND FOR PHONE:",
+                phone
+            );
+
+            return res.json({
+                success: false,
+                message:
+                    "User account not found for phone: " + phone
+            });
+
+        }
+
+        console.log(
+            "USER PHONE:",
+            user.phone
+        );
+
+        console.log(
+            "OLD BALANCE:",
+            user.balance
+        );
+
+        // ======================================
+        // DEPOSIT AMOUNT
+        // ======================================
+
+        const depositAmount = Number(deposit.amount);
+
+        if (!Number.isFinite(depositAmount) || depositAmount < 5000) {
+
+            return res.json({
+                success: false,
+                message: "Invalid deposit amount."
+            });
+
+        }
+
+        // ======================================
+        // 600 ETB BONUS
+        // ======================================
+
+        // Give 600 ETB bonus only once
+        let bonus = 0;
+
+        if (!user.referralPaid) {
+
+            bonus = 600;
+
+        }
+
+        // ======================================
+        // CALCULATE NEW BALANCE
+        // ======================================
+
+        const oldBalance = Number(user.balance || 0);
+
+        const newBalance =
+            oldBalance +
+            depositAmount +
+            bonus;
+
+        console.log("OLD BALANCE:", oldBalance);
+        console.log("DEPOSIT:", depositAmount);
+        console.log("BONUS:", bonus);
+        console.log("NEW BALANCE:", newBalance);
+
+        // ======================================
+        // SAVE USER BALANCE
+        // ======================================
+
+        user.balance = newBalance;
+
+        // Mark bonus as already given
+        if (bonus === 600) {
+
+            user.referralPaid = true;
+
+        }
+
+        await user.save();
+
+        // ======================================
+        // VERIFY BALANCE WAS REALLY SAVED
+        // ======================================
+
+        const savedUser = await User.findOne({
+            phone: phone
+        });
+
+        console.log(
+            "BALANCE AFTER MONGODB SAVE:",
+            savedUser ? savedUser.balance : "USER NOT FOUND"
+        );
+
+        if (!savedUser) {
+
+            return res.status(500).json({
+                success: false,
+                message: "User disappeared after balance update."
+            });
+
+        }
+
+        if (Number(savedUser.balance) !== newBalance) {
+
+            console.log("BALANCE SAVE FAILED");
+
+            return res.status(500).json({
+                success: false,
+                message: "Balance was not saved correctly."
+            });
+
+        }
+
+        // ======================================
+        // MARK DEPOSIT APPROVED
         // ======================================
 
         deposit.status = "Approved";
@@ -940,7 +1112,7 @@ console.log("==============================");
         }
 
         // ======================================
-        // NOTIFICATION TO USER
+        // NOTIFICATION
         // ======================================
 
         await Notification.create({
@@ -951,38 +1123,46 @@ console.log("==============================");
 
             message:
                 depositAmount +
-                " ETB was added to your wallet." +
+                " ETB deposit was added to your wallet." +
                 (bonus === 600
                     ? " You also received 600 ETB bonus."
                     : "")
 
         });
 
-        // ======================================
-        // RESPONSE
-        // ======================================
+        console.log(
+            "FINAL USER BALANCE:",
+            savedUser.balance
+        );
 
-        res.json({
+        console.log("DEPOSIT APPROVED SUCCESSFULLY");
+        console.log("======================================");
+
+        return res.json({
 
             success: true,
 
-            message: "Deposit approved and money added to user's wallet.",
+            message:
+                "Deposit approved. Money and bonus added to user's wallet.",
 
-            userPhone: user.phone,
+            phone: user.phone,
 
             depositAmount: depositAmount,
 
             bonus: bonus,
 
-            newBalance: user.balance
+            balance: savedUser.balance
 
         });
 
     } catch (err) {
 
-        console.log("APPROVE DEPOSIT ERROR:", err);
+        console.log(
+            "APPROVE DEPOSIT ERROR:",
+            err
+        );
 
-        res.status(500).json({
+        return res.status(500).json({
 
             success: false,
 
