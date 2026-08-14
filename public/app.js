@@ -1,12 +1,8 @@
-// ======================================
-// LOAD PRIVATE USER WALLET
-// ======================================
-
 async function loadWallet() {
 
     const phone = localStorage.getItem("phone");
 
-    console.log("WALLET PHONE:", phone);
+    console.log("LOADING WALLET FOR:", phone);
 
     if (!phone) {
 
@@ -20,24 +16,17 @@ async function loadWallet() {
 
         const response = await fetch(
             "/api/wallet/" +
-            encodeURIComponent(phone) +
-            "?t=" +
-            Date.now()
+            encodeURIComponent(phone)
         );
 
         const data = await response.json();
 
-        console.log(
-            "WALLET RESPONSE:",
-            data
-        );
+        console.log("WALLET RESPONSE:", data);
 
         if (data.success) {
 
             document.getElementById("balance").innerText =
-                Number(
-                    data.balance || 0
-                ).toLocaleString() +
+                Number(data.balance || 0).toLocaleString() +
                 " ETB";
 
         } else {
@@ -45,32 +34,16 @@ async function loadWallet() {
             document.getElementById("balance").innerText =
                 "0 ETB";
 
+            console.log(data.message);
         }
 
     } catch (error) {
 
-        console.error(
-            "WALLET ERROR:",
-            error
-        );
+        console.error("Wallet error:", error);
 
     }
-
 }
-
-
-// ======================================
-// LOAD IMMEDIATELY
-// ======================================
 
 loadWallet();
 
-
-// ======================================
-// REFRESH EVERY 5 SECONDS
-// ======================================
-
-setInterval(
-    loadWallet,
-    5000
-);
+setInterval(loadWallet, 5000);

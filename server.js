@@ -1227,22 +1227,52 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
     try {
 
-        const phone = decodeURIComponent(
-            req.params.phone
-        ).trim();
+        const phone = decodeURIComponent(req.params.phone).trim();
 
         console.log("=================================");
         console.log("WALLET REQUEST");
         console.log("PHONE FROM WEBSITE:", phone);
 
-        const user = await User.findOne({
+        let user = await User.findOne({
             phone: phone
         });
+
+        // Try +251 -> 09
+        if (!user && phone.startsWith("+251")) {
+
+            const localPhone =
+                "0" + phone.substring(4);
+
+            console.log(
+                "Trying local phone:",
+                localPhone
+            );
+
+            user = await User.findOne({
+                phone: localPhone
+            });
+        }
+
+        // Try 09 -> +251
+        if (!user && phone.startsWith("0")) {
+
+            const internationalPhone =
+                "+251" + phone.substring(1);
+
+            console.log(
+                "Trying international phone:",
+                internationalPhone
+            );
+
+            user = await User.findOne({
+                phone: internationalPhone
+            });
+        }
 
         if (!user) {
 
             console.log(
-                "USER NOT FOUND FOR WALLET:",
+                "WALLET USER NOT FOUND:",
                 phone
             );
 
@@ -1250,20 +1280,23 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
                 success: false,
 
-                phone: phone,
-
                 balance: 0,
 
-                message:
-                    "User not found for phone: " +
-                    phone
+                message: "User not found."
 
             });
-
         }
 
-        console.log("USER FOUND:", user.phone);
-        console.log("DATABASE BALANCE:", user.balance);
+        console.log(
+            "USER FOUND:",
+            user.phone
+        );
+
+        console.log(
+            "USER BALANCE:",
+            user.balance
+        );
+
         console.log("=================================");
 
         return res.json({
@@ -1272,9 +1305,7 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
             phone: user.phone,
 
-            balance: Number(
-                user.balance || 0
-            )
+            balance: Number(user.balance || 0)
 
         });
 
