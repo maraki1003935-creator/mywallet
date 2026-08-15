@@ -1,6 +1,6 @@
 // ======================================================
 // PUBLIC APP.JS
-// USER WALLET + BALANCE + DEPOSIT
+// USER WALLET + BALANCE + DEPOSIT + LOGOUT
 // ======================================================
 
 
@@ -10,10 +10,18 @@
 
 function getUserPhone() {
 
-    const phone = localStorage.getItem("phone");
+    const phone =
+        localStorage.getItem("phone") ||
+        localStorage.getItem("userPhone") ||
+        sessionStorage.getItem("phone") ||
+        sessionStorage.getItem("userPhone");
 
     if (!phone) {
-        console.log("No phone number found in localStorage.");
+
+        console.log(
+            "No phone number found in browser storage."
+        );
+
         return null;
     }
 
@@ -22,50 +30,219 @@ function getUserPhone() {
 
 
 // ======================================================
-// LOAD USER WALLET BALANCE
+// UPDATE BALANCE ON WEBSITE
+// ======================================================
+
+function updateBalanceOnPage(balance) {
+
+    const amount =
+        Number(balance || 0);
+
+    const formattedBalance =
+        amount.toLocaleString("en-US") +
+        " ETB";
+
+    console.log(
+        "DISPLAYING BALANCE:",
+        formattedBalance
+    );
+
+
+    // ----------------------------------------------
+    // Main balance
+    // ----------------------------------------------
+
+    const balanceElement =
+        document.getElementById("balance");
+
+    if (balanceElement) {
+
+        balanceElement.textContent =
+            formattedBalance;
+
+        console.log(
+            "#balance updated:",
+            formattedBalance
+        );
+    }
+
+
+    // ----------------------------------------------
+    // Other possible balance elements
+    // ----------------------------------------------
+
+    const walletBalance =
+        document.getElementById("walletBalance");
+
+    if (walletBalance) {
+
+        walletBalance.textContent =
+            formattedBalance;
+
+        console.log(
+            "#walletBalance updated"
+        );
+    }
+
+
+    const availableBalance =
+        document.getElementById("availableBalance");
+
+    if (availableBalance) {
+
+        availableBalance.textContent =
+            formattedBalance;
+
+        console.log(
+            "#availableBalance updated"
+        );
+    }
+
+
+    const currentBalance =
+        document.getElementById("currentBalance");
+
+    if (currentBalance) {
+
+        currentBalance.textContent =
+            formattedBalance;
+
+        console.log(
+            "#currentBalance updated"
+        );
+    }
+
+
+    const userBalance =
+        document.getElementById("userBalance");
+
+    if (userBalance) {
+
+        userBalance.textContent =
+            formattedBalance;
+
+        console.log(
+            "#userBalance updated"
+        );
+    }
+
+}
+
+
+// ======================================================
+// LOAD PRIVATE USER WALLET BALANCE
 // ======================================================
 
 async function loadWalletBalance() {
 
-    const balanceElement = document.getElementById("balance");
+    console.log(
+        "======================================"
+    );
 
-    if (!balanceElement) {
-        console.log("Balance element #balance was not found.");
-        return;
-    }
+    console.log(
+        "LOADING PRIVATE USER WALLET"
+    );
 
-    const phone = getUserPhone();
+    console.log(
+        "======================================"
+    );
+
+
+    // ----------------------------------------------
+    // Get logged-in phone
+    // ----------------------------------------------
+
+    const phone =
+        getUserPhone();
+
+
+    console.log(
+        "PHONE FROM STORAGE:",
+        phone
+    );
+
 
     if (!phone) {
 
-        balanceElement.textContent = "0 ETB";
+        console.log(
+            "No logged-in phone."
+        );
 
-        console.log("No logged-in phone number.");
+        updateBalanceOnPage(0);
 
         return;
     }
 
-    console.log("Loading wallet for phone:", phone);
+
+    // ----------------------------------------------
+    // Request user's private wallet
+    // ----------------------------------------------
+
+    const encodedPhone =
+        encodeURIComponent(
+            phone
+        );
+
+
+    const walletURL =
+        "/api/wallet/" +
+        encodedPhone +
+        "?t=" +
+        Date.now();
+
+
+    console.log(
+        "REQUESTING:",
+        walletURL
+    );
+
 
     try {
 
-        balanceElement.textContent = "Loading...";
+        const response =
+            await fetch(
+                walletURL,
+                {
+                    method: "GET",
 
-        const response = await fetch(
-            "/api/wallet/" + encodeURIComponent(phone) +
-            "?t=" + Date.now(),
-            {
-                method: "GET",
-                cache: "no-store",
-                headers: {
-                    "Cache-Control": "no-cache"
+                    cache: "no-store",
+
+                    headers: {
+
+                        "Cache-Control":
+                            "no-cache",
+
+                        "Pragma":
+                            "no-cache"
+
+                    }
                 }
-            }
+            );
+
+
+        console.log(
+            "WALLET HTTP STATUS:",
+            response.status
         );
 
-        const data = await response.json();
 
-        console.log("Wallet response:", data);
+        // ------------------------------------------
+        // Convert response to JSON
+        // ------------------------------------------
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "WALLET API RESPONSE:",
+            data
+        );
+
+
+        // ------------------------------------------
+        // Server error
+        // ------------------------------------------
 
         if (!response.ok) {
 
@@ -74,59 +251,93 @@ async function loadWalletBalance() {
                 response.status
             );
 
-            balanceElement.textContent = "0 ETB";
-
             return;
         }
+
+
+        // ------------------------------------------
+        // User not found / API error
+        // ------------------------------------------
 
         if (!data.success) {
 
             console.log(
-                "Wallet error:",
+                "Wallet API error:",
                 data.message
             );
-
-            balanceElement.textContent = "0 ETB";
 
             return;
         }
 
-        const balance = Number(data.balance || 0);
 
-        balanceElement.textContent =
-            balance.toLocaleString("en-US") + " ETB";
+        // ------------------------------------------
+        // Get balance from MongoDB
+        // ------------------------------------------
+
+        const balance =
+            Number(
+                data.balance || 0
+            );
+
 
         console.log(
-            "USER:",
+            "DATABASE PHONE:",
             data.phone
         );
 
+
         console.log(
-            "BALANCE:",
+            "DATABASE BALANCE:",
             balance
         );
 
-    } catch (error) {
+
+        // ------------------------------------------
+        // PUT BALANCE ON WEBSITE
+        // ------------------------------------------
+
+        updateBalanceOnPage(
+            balance
+        );
+
 
         console.log(
-            "Wallet loading error:",
+            "WALLET BALANCE UPDATED SUCCESSFULLY"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "WALLET LOAD ERROR:",
             error
         );
 
-        balanceElement.textContent = "0 ETB";
     }
+
 }
 
 
 // ======================================================
-// LOAD BALANCE WHEN PAGE OPENS
+// PAGE OPEN
 // ======================================================
 
 document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-        console.log("Public app.js loaded.");
+        console.log(
+            "======================================"
+        );
+
+        console.log(
+            "PUBLIC APP.JS LOADED"
+        );
+
+        console.log(
+            "======================================"
+        );
+
 
         loadWalletBalance();
 
@@ -135,13 +346,17 @@ document.addEventListener(
 
 
 // ======================================================
-// REFRESH BALANCE WHEN USER RETURNS TO PAGE
+// PAGE SHOW
 // ======================================================
 
 window.addEventListener(
     "pageshow",
     function () {
 
+        console.log(
+            "PAGE SHOW - LOADING BALANCE"
+        );
+
         loadWalletBalance();
 
     }
@@ -149,14 +364,21 @@ window.addEventListener(
 
 
 // ======================================================
-// REFRESH BALANCE WHEN PAGE BECOMES VISIBLE AGAIN
+// PAGE BECOMES VISIBLE
 // ======================================================
 
 document.addEventListener(
     "visibilitychange",
     function () {
 
-        if (document.visibilityState === "visible") {
+        if (
+            document.visibilityState ===
+            "visible"
+        ) {
+
+            console.log(
+                "PAGE VISIBLE - LOADING BALANCE"
+            );
 
             loadWalletBalance();
 
@@ -167,14 +389,26 @@ document.addEventListener(
 
 
 // ======================================================
-// MANUAL REFRESH FUNCTION
+// AUTOMATIC BALANCE REFRESH
+// EVERY 5 SECONDS
 // ======================================================
 
-window.refreshWalletBalance = function () {
+setInterval(
+    function () {
 
-    loadWalletBalance();
+        loadWalletBalance();
 
-};
+    },
+    5000
+);
+
+
+// ======================================================
+// MANUAL BALANCE REFRESH
+// ======================================================
+
+window.refreshWalletBalance =
+    loadWalletBalance;
 
 
 // ======================================================
@@ -183,28 +417,51 @@ window.refreshWalletBalance = function () {
 
 async function deposit() {
 
+
     const amountInput =
-        document.getElementById("amount");
+        document.getElementById(
+            "amount"
+        );
+
 
     const txidInput =
-        document.getElementById("txid");
+        document.getElementById(
+            "txid"
+        );
+
 
     const message =
-        document.getElementById("message");
+        document.getElementById(
+            "message"
+        );
 
 
-    if (!amountInput || !txidInput) {
+    // ----------------------------------------------
+    // Check fields
+    // ----------------------------------------------
+
+    if (
+        !amountInput ||
+        !txidInput
+    ) {
 
         console.log(
-            "Deposit fields were not found."
+            "Deposit fields not found."
         );
 
         return;
     }
 
 
+    // ----------------------------------------------
+    // Get values
+    // ----------------------------------------------
+
     const amount =
-        Number(amountInput.value);
+        Number(
+            amountInput.value
+        );
+
 
     const txid =
         txidInput.value.trim();
@@ -214,11 +471,16 @@ async function deposit() {
         getUserPhone();
 
 
+    // ----------------------------------------------
+    // Login check
+    // ----------------------------------------------
+
     if (!phone) {
 
         if (message) {
 
-            message.style.color = "red";
+            message.style.color =
+                "red";
 
             message.textContent =
                 "Please login first.";
@@ -229,11 +491,19 @@ async function deposit() {
     }
 
 
-    if (!amount || amount <= 0) {
+    // ----------------------------------------------
+    // Amount check
+    // ----------------------------------------------
+
+    if (
+        !amount ||
+        amount <= 0
+    ) {
 
         if (message) {
 
-            message.style.color = "red";
+            message.style.color =
+                "red";
 
             message.textContent =
                 "Please enter a valid amount.";
@@ -244,11 +514,16 @@ async function deposit() {
     }
 
 
+    // ----------------------------------------------
+    // TXID check
+    // ----------------------------------------------
+
     if (!txid) {
 
         if (message) {
 
-            message.style.color = "red";
+            message.style.color =
+                "red";
 
             message.textContent =
                 "Please enter your Telebirr TXID.";
@@ -261,15 +536,21 @@ async function deposit() {
 
     try {
 
+
         if (message) {
 
-            message.style.color = "black";
+            message.style.color =
+                "black";
 
             message.textContent =
                 "Submitting deposit...";
 
         }
 
+
+        // ------------------------------------------
+        // Send deposit to server
+        // ------------------------------------------
 
         const response =
             await fetch(
@@ -278,19 +559,26 @@ async function deposit() {
                     method: "POST",
 
                     headers: {
+
                         "Content-Type":
                             "application/json"
+
                     },
 
-                    body: JSON.stringify({
+                    body:
+                        JSON.stringify({
 
-                        phone: phone,
+                            phone:
+                                phone,
 
-                        amount: amount,
+                            amount:
+                                amount,
 
-                        txid: txid
+                            txid:
+                                txid
 
-                    })
+                        })
+
                 }
             );
 
@@ -300,13 +588,19 @@ async function deposit() {
 
 
         console.log(
-            "Deposit response:",
+            "DEPOSIT RESPONSE:",
             data
         );
 
 
-        if (!response.ok ||
-            !data.success) {
+        // ------------------------------------------
+        // Deposit failed
+        // ------------------------------------------
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
 
             if (message) {
 
@@ -323,6 +617,10 @@ async function deposit() {
         }
 
 
+        // ------------------------------------------
+        // Deposit submitted
+        // ------------------------------------------
+
         if (message) {
 
             message.style.color =
@@ -335,20 +633,22 @@ async function deposit() {
         }
 
 
+        // Clear fields
+
         amountInput.value = "";
 
         txidInput.value = "";
 
 
-        // Keep current balance displayed.
-        // Admin approval will update MongoDB.
+        // Refresh balance
+
         await loadWalletBalance();
 
 
     } catch (error) {
 
-        console.log(
-            "Deposit error:",
+        console.error(
+            "DEPOSIT ERROR:",
             error
         );
 
@@ -369,10 +669,11 @@ async function deposit() {
 
 
 // ======================================================
-// MAKE DEPOSIT FUNCTION AVAILABLE TO HTML
+// MAKE DEPOSIT AVAILABLE TO HTML
 // ======================================================
 
-window.deposit = deposit;
+window.deposit =
+    deposit;
 
 
 // ======================================================
@@ -381,26 +682,52 @@ window.deposit = deposit;
 
 function logout() {
 
-    localStorage.removeItem("phone");
 
-    localStorage.removeItem("user");
+    localStorage.removeItem(
+        "phone"
+    );
 
-    window.location.href = "/";
+
+    localStorage.removeItem(
+        "userPhone"
+    );
+
+
+    localStorage.removeItem(
+        "user"
+    );
+
+
+    sessionStorage.removeItem(
+        "phone"
+    );
+
+
+    sessionStorage.removeItem(
+        "userPhone"
+    );
+
+
+    window.location.href =
+        "/";
 
 }
 
 
-window.logout = logout;
+window.logout =
+    logout;
 
 
 // ======================================================
-// OPTIONAL: GET CURRENT USER
+// LOAD CURRENT USER
 // ======================================================
 
 async function loadCurrentUser() {
 
+
     const phone =
         getUserPhone();
+
 
     if (!phone) {
 
@@ -411,19 +738,42 @@ async function loadCurrentUser() {
 
     try {
 
+
         const response =
             await fetch(
                 "/api/wallet/" +
-                encodeURIComponent(phone) +
-                "?t=" + Date.now(),
+                encodeURIComponent(
+                    phone
+                ) +
+                "?t=" +
+                Date.now(),
+
                 {
-                    cache: "no-store"
+                    method:
+                        "GET",
+
+                    cache:
+                        "no-store",
+
+                    headers: {
+
+                        "Cache-Control":
+                            "no-cache"
+
+                    }
+
                 }
             );
 
 
         const data =
             await response.json();
+
+
+        console.log(
+            "CURRENT USER:",
+            data
+        );
 
 
         if (!data.success) {
@@ -440,12 +790,15 @@ async function loadCurrentUser() {
 
         return data;
 
+
     } catch (error) {
 
-        console.log(
-            "Current user error:",
+
+        console.error(
+            "CURRENT USER ERROR:",
             error
         );
+
 
         return null;
 
