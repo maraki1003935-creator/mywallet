@@ -498,6 +498,105 @@ router.get("/users",verifyAdmin,async(req,res)=>{
     }
 
 });
+// ======================================
+// ADMIN: GET USER BALANCE
+// ======================================
+
+router.get("/user/:id/balance", verifyAdmin, async (req, res) => {
+    try {
+
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User not found."
+            });
+        }
+
+        res.json({
+            success: true,
+            phone: user.phone,
+            balance: Number(user.balance || 0)
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+// ======================================
+// ADMIN: SET USER BALANCE
+// ======================================
+
+router.post("/user/:id/set-balance", verifyAdmin, async (req, res) => {
+
+    try {
+
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User not found."
+            });
+        }
+
+        const newBalance = Number(req.body.balance);
+
+        if (!Number.isFinite(newBalance) || newBalance < 0) {
+            return res.json({
+                success: false,
+                message: "Invalid balance."
+            });
+        }
+
+        const oldBalance = Number(user.balance || 0);
+
+        user.balance = newBalance;
+
+        await user.save();
+
+        await Transaction.create({
+            phone: user.phone,
+            type: "Admin Balance Update",
+            amount: newBalance - oldBalance,
+            status: "Approved",
+            reference: "ADMIN-BALANCE-" + Date.now()
+        });
+
+        await Notification.create({
+            phone: user.phone,
+            title: "Wallet Balance Updated",
+            message:
+                "Your wallet balance has been updated to " +
+                newBalance +
+                " ETB."
+        });
+
+        res.json({
+            success: true,
+            message: "User balance updated successfully.",
+            phone: user.phone,
+            oldBalance: oldBalance,
+            newBalance: user.balance
+        });
+
+    } catch (err) {
+
+        console.log("SET BALANCE ERROR:", err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
 
 // ======================================
 // BAN USER
@@ -795,7 +894,7 @@ router.post("/user/block/:id", async (req, res) => {
 });
 // ======================================
 // APPROVE DEPOSIT
-// ADD DEPOSIT + 600 ETB BONUS TO USER
+// ADD DEPOSIT + 600 ETB REFERRAL BONUS
 // ======================================
 
 router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
@@ -811,252 +910,166 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
             });
         }
 
-        // Prevent approving twice
         if (deposit.status === "Approved") {
             return res.json({
                 success: false,
-                message: "Deposit already approved."
+                message: "Deposit is already approved."
             });
         }
 
-        // ======================================
-        // FIND USER BY PHONE
-        // ======================================
-
-        const depositPhone = String(deposit.phone || "").trim();
-
-        console.log("======================================");
-        console.log("APPROVING DEPOSIT");
-        console.log("Deposit ID:", deposit._id);
-        console.log("Deposit phone:", depositPhone);
-        console.log("Deposit amount:", deposit.amount);
-
-        let user = await User.findOne({
-            phone: depositPhone
+        const user = await User.findOne({
+            phone: deposit.phone
         });
 
-        // ======================================
-        // IF NOT FOUND, TRY WITHOUT +251
-        // ======================================
-
-        if (!user && depositPhone.startsWith("+251")) {
-
-            const localPhone = "0" + depositPhone.substring(4);
-
-            console.log("Trying local phone:", localPhone);
-
-            user = await User.findOne({
-                phone: localPhone
-            });
-        }
-
-        // ======================================
-        // IF NOT FOUND, TRY +251 FORMAT
-        // ======================================
-
-        if (!user && depositPhone.startsWith("0")) {
-
-            const internationalPhone =
-                "+251" + depositPhone.substring(1);
-
-            console.log(
-                "Trying international phone:",
-                internationalPhone
-            );
-
-            user = await User.findOne({
-                phone: internationalPhone
-            });
-        }
-
-        // ======================================
-        // USER NOT FOUND
-        // ======================================
-
         if (!user) {
-
-            console.log(
-                "USER NOT FOUND FOR DEPOSIT PHONE:",
-                depositPhone
-            );
-
             return res.json({
                 success: false,
                 message:
-                    "User not found for phone: " +
-                    depositPhone
+                    "User not found for phone: " + deposit.phone
             });
         }
 
-        console.log("USER FOUND:", user.phone);
-        console.log("OLD BALANCE:", user.balance);
+        const amount = Number(deposit.amount);
 
-        // ======================================
-        // DEPOSIT AMOUNT
-        // ======================================
-
-        const depositAmount = Number(deposit.amount);
-
-        if (!Number.isFinite(depositAmount) || depositAmount <= 0) {
-
+        if (!Number.isFinite(amount) || amount <= 0) {
             return res.json({
                 success: false,
                 message: "Invalid deposit amount."
             });
         }
 
-        // ======================================
-        // ADD DEPOSIT MONEY
-        // ======================================
+        // ----------------------------------
+        // OLD BALANCE
+        // ----------------------------------
 
         const oldBalance = Number(user.balance || 0);
 
-        user.balance = oldBalance + depositAmount;
+        // ----------------------------------
+        // ADD DEPOSIT
+        // ----------------------------------
 
-        // ======================================
-        // ADD 600 ETB BONUS
-        // ======================================
+        user.balance = oldBalance + amount;
+
+        // ----------------------------------
+        // REFERRAL BONUS
+        // ----------------------------------
 
         let bonus = 0;
 
-        if (!user.referralPaid) {
+        if (
+            amount >= 5000 &&
+            user.referredBy &&
+            user.referralPaid !== true
+        ) {
 
-            bonus = 600;
+            const referrer = await User.findOne({
+                referralCode: user.referredBy
+            });
 
-            user.balance =
-                Number(user.balance || 0) + bonus;
+            if (referrer) {
 
-            user.referralPaid = true;
+                referrer.balance =
+                    Number(referrer.balance || 0) + 600;
+
+                referrer.referralEarnings =
+                    Number(referrer.referralEarnings || 0) + 600;
+
+                referrer.invitedUsers =
+                    Number(referrer.invitedUsers || 0) + 1;
+
+                await referrer.save();
+
+                user.referralPaid = true;
+
+                bonus = 600;
+
+                await Transaction.create({
+                    phone: referrer.phone,
+                    type: "Referral Bonus",
+                    amount: 600,
+                    status: "Approved",
+                    reference:
+                        "REFERRAL-" + deposit._id
+                });
+
+                await Notification.create({
+                    phone: referrer.phone,
+                    title: "Referral Bonus",
+                    message:
+                        "You received 600 ETB referral bonus."
+                });
+            }
         }
 
-        // ======================================
-        // SAVE USER
-        // ======================================
+        // ----------------------------------
+        // SAVE DEPOSITOR
+        // ----------------------------------
 
         await user.save();
 
-        console.log("NEW BALANCE:", user.balance);
-
-        // ======================================
-        // VERIFY DATABASE SAVE
-        // ======================================
-
-        const savedUser = await User.findOne({
-            _id: user._id
-        });
-
-        console.log(
-            "DATABASE BALANCE:",
-            savedUser.balance
-        );
-
-        // ======================================
+        // ----------------------------------
         // APPROVE DEPOSIT
-        // ======================================
+        // ----------------------------------
 
         deposit.status = "Approved";
+        deposit.bonusAdded = bonus === 600;
 
         await deposit.save();
 
-        // ======================================
+        // ----------------------------------
         // DEPOSIT TRANSACTION
-        // ======================================
+        // ----------------------------------
 
         await Transaction.create({
-
-            phone: savedUser.phone,
-
+            phone: user.phone,
             type: "Deposit",
-
-            amount: depositAmount,
-
+            amount: amount,
             status: "Approved",
-
-            reference: "DEP-" + deposit._id
-
+            reference: "DEPOSIT-" + deposit._id
         });
 
-        // ======================================
-        // BONUS TRANSACTION
-        // ======================================
-
-        if (bonus === 600) {
-
-            await Transaction.create({
-
-                phone: savedUser.phone,
-
-                type: "Deposit Bonus",
-
-                amount: 600,
-
-                status: "Approved",
-
-                reference: "BONUS-" + deposit._id
-
-            });
-        }
-
-        // ======================================
-        // NOTIFICATION
-        // ======================================
+        // ----------------------------------
+        // USER NOTIFICATION
+        // ----------------------------------
 
         await Notification.create({
-
-            phone: savedUser.phone,
-
+            phone: user.phone,
             title: "Deposit Approved",
-
             message:
-                depositAmount +
-                " ETB was added to your wallet." +
+                amount +
+                " ETB has been added to your wallet." +
                 (bonus === 600
-                    ? " You also received 600 ETB bonus."
+                    ? " Referral bonus: 600 ETB."
                     : "")
-
         });
 
-        console.log("======================================");
+        console.log("==============================");
         console.log("DEPOSIT APPROVED");
-        console.log("USER:", savedUser.phone);
-        console.log("DEPOSIT:", depositAmount);
+        console.log("PHONE:", user.phone);
+        console.log("DEPOSIT:", amount);
         console.log("BONUS:", bonus);
-        console.log("FINAL BALANCE:", savedUser.balance);
-        console.log("======================================");
+        console.log("OLD BALANCE:", oldBalance);
+        console.log("NEW BALANCE:", user.balance);
+        console.log("==============================");
 
         return res.json({
-
             success: true,
-
-            message:
-                "Deposit approved. Money and bonus added.",
-
-            phone: savedUser.phone,
-
-            depositAmount: depositAmount,
-
+            message: "Deposit approved successfully.",
+            phone: user.phone,
+            depositAmount: amount,
             bonus: bonus,
-
-            balance: Number(savedUser.balance || 0)
-
+            balance: user.balance
         });
 
     } catch (err) {
 
-        console.log(
-            "APPROVE DEPOSIT ERROR:",
-            err
-        );
+        console.log("APPROVE DEPOSIT ERROR:", err);
 
         return res.status(500).json({
-
             success: false,
-
             message: err.message
-
         });
     }
-
 });
 // ======================================
 // GET USER DETAILS
