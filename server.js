@@ -878,47 +878,60 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
     try {
 
-        const phone = decodeURIComponent(req.params.phone).trim();
+        const phone = decodeURIComponent(req.params.phone)
+            .trim();
 
-        console.log("WALLET REQUEST FOR PHONE:", phone);
+        console.log("=================================");
+        console.log("PRIVATE WALLET REQUEST");
+        console.log("PHONE FROM WEBSITE:", phone);
 
+        // Find EXACT user
         const user = await User.findOne({
             phone: phone
         });
 
         if (!user) {
 
-            console.log("WALLET USER NOT FOUND:", phone);
+            console.log("USER NOT FOUND:", phone);
+            console.log("=================================");
 
             return res.json({
                 success: false,
                 balance: 0,
+                phone: phone,
                 message: "User not found."
             });
-
         }
 
-        console.log(
-            "WALLET USER:",
-            user.phone,
-            "BALANCE:",
-            user.balance
-        );
+        console.log("USER FOUND:", user.phone);
+        console.log("USER BALANCE:", user.balance);
+        console.log("=================================");
 
         return res.json({
+
             success: true,
+
             phone: user.phone,
-            balance: Number(user.balance || 0)
+
+            balance: Number(user.balance || 0),
+
+            referralEarnings:
+                Number(user.referralEarnings || 0)
+
         });
 
-    } catch (err) {
+    } catch (error) {
 
-        console.log("WALLET ERROR:", err);
+        console.log("PRIVATE WALLET ERROR:", error);
 
         return res.status(500).json({
+
             success: false,
+
             balance: 0,
-            message: "Server error."
+
+            message: error.message
+
         });
 
     }

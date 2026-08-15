@@ -2,12 +2,20 @@ async function loadWallet() {
 
     const phone = localStorage.getItem("phone");
 
-    console.log("LOADING WALLET FOR:", phone);
+    console.log("=================================");
+    console.log("LOADING PRIVATE WALLET");
+    console.log("PHONE:", phone);
 
     if (!phone) {
 
-        document.getElementById("balance").innerText =
-            "0 ETB";
+        console.log("NO PHONE IN LOCAL STORAGE");
+
+        const balanceElement =
+            document.getElementById("balance");
+
+        if (balanceElement) {
+            balanceElement.innerText = "0 ETB";
+        }
 
         return;
     }
@@ -15,35 +23,62 @@ async function loadWallet() {
     try {
 
         const response = await fetch(
-            "/api/wallet/" +
-            encodeURIComponent(phone)
+            "/api/wallet/" + encodeURIComponent(phone),
+            {
+                method: "GET",
+                cache: "no-store"
+            }
         );
 
         const data = await response.json();
 
-        console.log("WALLET RESPONSE:", data);
+        console.log("WALLET SERVER RESPONSE:", data);
+
+        const balanceElement =
+            document.getElementById("balance");
+
+        if (!balanceElement) {
+
+            console.log(
+                "ERROR: Element with id='balance' not found."
+            );
+
+            return;
+        }
 
         if (data.success) {
 
-            document.getElementById("balance").innerText =
-                Number(data.balance || 0).toLocaleString() +
-                " ETB";
+            const balance =
+                Number(data.balance || 0);
+
+            balanceElement.innerText =
+                balance.toLocaleString() + " ETB";
+
+            console.log(
+                "PRIVATE WALLET BALANCE:",
+                balance
+            );
 
         } else {
 
-            document.getElementById("balance").innerText =
-                "0 ETB";
+            balanceElement.innerText = "0 ETB";
 
-            console.log(data.message);
+            console.log(
+                "WALLET ERROR:",
+                data.message
+            );
+
         }
 
     } catch (error) {
 
-        console.error("Wallet error:", error);
+        console.error(
+            "PRIVATE WALLET FETCH ERROR:",
+            error
+        );
 
     }
+
+    console.log("=================================");
+
 }
-
-loadWallet();
-
-setInterval(loadWallet, 5000);
