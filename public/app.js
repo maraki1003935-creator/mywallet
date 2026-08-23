@@ -1,816 +1,267 @@
 // ======================================================
-// PUBLIC APP.JS
-// USER WALLET + BALANCE + DEPOSIT + LOGOUT
+// PUBLIC WALLET APP.JS
 // ======================================================
 
+(function () {
 
-// ======================================================
-// GET LOGGED-IN USER PHONE
-// ======================================================
+    "use strict";
 
-function getUserPhone() {
+    // ==================================================
+    // GET USER PHONE
+    // ==================================================
 
-    const phone =
-        localStorage.getItem("phone") ||
-        localStorage.getItem("userPhone") ||
-        sessionStorage.getItem("phone") ||
-        sessionStorage.getItem("userPhone");
+    function getUserPhone() {
 
-    if (!phone) {
+        let phone =
+            localStorage.getItem("phone") ||
+            localStorage.getItem("userPhone") ||
+            sessionStorage.getItem("phone") ||
+            sessionStorage.getItem("userPhone");
 
-        console.log(
-            "No phone number found in browser storage."
-        );
+        if (!phone) {
+            console.log("❌ No phone found in storage.");
+            return null;
+        }
 
-        return null;
-    }
+        phone = String(phone).trim();
 
-    return phone.trim();
-}
+        console.log("📱 Logged-in phone:", phone);
 
-
-// ======================================================
-// UPDATE BALANCE ON WEBSITE
-// ======================================================
-
-function updateBalanceOnPage(balance) {
-
-    const amount =
-        Number(balance || 0);
-
-    const formattedBalance =
-        amount.toLocaleString("en-US") +
-        " ETB";
-
-    console.log(
-        "DISPLAYING BALANCE:",
-        formattedBalance
-    );
-
-
-    // ----------------------------------------------
-    // Main balance
-    // ----------------------------------------------
-
-    const balanceElement =
-        document.getElementById("balance");
-
-    if (balanceElement) {
-
-        balanceElement.textContent =
-            formattedBalance;
-
-        console.log(
-            "#balance updated:",
-            formattedBalance
-        );
+        return phone;
     }
 
 
-    // ----------------------------------------------
-    // Other possible balance elements
-    // ----------------------------------------------
+    // ==================================================
+    // LOAD WALLET BALANCE
+    // ==================================================
 
-    const walletBalance =
-        document.getElementById("walletBalance");
+    async function loadWalletBalance() {
 
-    if (walletBalance) {
-
-        walletBalance.textContent =
-            formattedBalance;
+        const balanceElement =
+            document.getElementById("balance");
 
         console.log(
-            "#walletBalance updated"
-        );
-    }
-
-
-    const availableBalance =
-        document.getElementById("availableBalance");
-
-    if (availableBalance) {
-
-        availableBalance.textContent =
-            formattedBalance;
-
-        console.log(
-            "#availableBalance updated"
-        );
-    }
-
-
-    const currentBalance =
-        document.getElementById("currentBalance");
-
-    if (currentBalance) {
-
-        currentBalance.textContent =
-            formattedBalance;
-
-        console.log(
-            "#currentBalance updated"
-        );
-    }
-
-
-    const userBalance =
-        document.getElementById("userBalance");
-
-    if (userBalance) {
-
-        userBalance.textContent =
-            formattedBalance;
-
-        console.log(
-            "#userBalance updated"
-        );
-    }
-
-}
-
-
-// ======================================================
-// LOAD PRIVATE USER WALLET BALANCE
-// ======================================================
-
-async function loadWalletBalance() {
-
-    console.log(
-        "======================================"
-    );
-
-    console.log(
-        "LOADING PRIVATE USER WALLET"
-    );
-
-    console.log(
-        "======================================"
-    );
-
-
-    // ----------------------------------------------
-    // Get logged-in phone
-    // ----------------------------------------------
-
-    const phone =
-        getUserPhone();
-
-
-    console.log(
-        "PHONE FROM STORAGE:",
-        phone
-    );
-
-
-    if (!phone) {
-
-        console.log(
-            "No logged-in phone."
+            "🔎 #balance element:",
+            balanceElement
         );
 
-        updateBalanceOnPage(0);
+        if (!balanceElement) {
 
-        return;
-    }
-
-
-    // ----------------------------------------------
-    // Request user's private wallet
-    // ----------------------------------------------
-
-    const encodedPhone =
-        encodeURIComponent(
-            phone
-        );
-
-
-    const walletURL =
-        "/api/wallet/" +
-        encodedPhone +
-        "?t=" +
-        Date.now();
-
-
-    console.log(
-        "REQUESTING:",
-        walletURL
-    );
-
-
-    try {
-
-        const response =
-            await fetch(
-                walletURL,
-                {
-                    method: "GET",
-
-                    cache: "no-store",
-
-                    headers: {
-
-                        "Cache-Control":
-                            "no-cache",
-
-                        "Pragma":
-                            "no-cache"
-
-                    }
-                }
+            console.error(
+                "❌ IMPORTANT: wallet.html does not contain id=\"balance\""
             );
 
+            return;
+        }
+
+
+        const phone = getUserPhone();
+
+
+        if (!phone) {
+
+            balanceElement.textContent = "0 ETB";
+
+            return;
+        }
+
+
+        const url =
+            "/api/wallet/" +
+            encodeURIComponent(phone) +
+            "?t=" +
+            Date.now();
+
 
         console.log(
-            "WALLET HTTP STATUS:",
-            response.status
+            "🌐 Requesting:",
+            url
         );
 
 
-        // ------------------------------------------
-        // Convert response to JSON
-        // ------------------------------------------
+        try {
 
-        const data =
-            await response.json();
+            balanceElement.textContent =
+                "Loading...";
 
 
-        console.log(
-            "WALLET API RESPONSE:",
-            data
-        );
+            const response =
+                await fetch(
+                    url,
+                    {
+                        method: "GET",
+                        cache: "no-store",
+                        headers: {
+                            "Cache-Control": "no-cache",
+                            "Pragma": "no-cache"
+                        }
+                    }
+                );
 
-
-        // ------------------------------------------
-        // Server error
-        // ------------------------------------------
-
-        if (!response.ok) {
 
             console.log(
-                "Wallet server error:",
+                "📡 HTTP status:",
                 response.status
             );
 
-            return;
-        }
 
+            const data =
+                await response.json();
 
-        // ------------------------------------------
-        // User not found / API error
-        // ------------------------------------------
-
-        if (!data.success) {
 
             console.log(
-                "Wallet API error:",
-                data.message
-            );
-
-            return;
-        }
-
-
-        // ------------------------------------------
-        // Get balance from MongoDB
-        // ------------------------------------------
-
-        const balance =
-            Number(
-                data.balance || 0
+                "💰 WALLET API:",
+                data
             );
 
 
-        console.log(
-            "DATABASE PHONE:",
-            data.phone
-        );
+            if (!data.success) {
+
+                console.error(
+                    "❌ Wallet API error:",
+                    data.message
+                );
+
+                balanceElement.textContent =
+                    "0 ETB";
+
+                return;
+            }
 
 
-        console.log(
-            "DATABASE BALANCE:",
-            balance
-        );
+            const balance =
+                Number(data.balance);
 
-
-        // ------------------------------------------
-        // PUT BALANCE ON WEBSITE
-        // ------------------------------------------
-
-        updateBalanceOnPage(
-            balance
-        );
-
-
-        console.log(
-            "WALLET BALANCE UPDATED SUCCESSFULLY"
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "WALLET LOAD ERROR:",
-            error
-        );
-
-    }
-
-}
-
-
-// ======================================================
-// PAGE OPEN
-// ======================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        console.log(
-            "======================================"
-        );
-
-        console.log(
-            "PUBLIC APP.JS LOADED"
-        );
-
-        console.log(
-            "======================================"
-        );
-
-
-        loadWalletBalance();
-
-    }
-);
-
-
-// ======================================================
-// PAGE SHOW
-// ======================================================
-
-window.addEventListener(
-    "pageshow",
-    function () {
-
-        console.log(
-            "PAGE SHOW - LOADING BALANCE"
-        );
-
-        loadWalletBalance();
-
-    }
-);
-
-
-// ======================================================
-// PAGE BECOMES VISIBLE
-// ======================================================
-
-document.addEventListener(
-    "visibilitychange",
-    function () {
-
-        if (
-            document.visibilityState ===
-            "visible"
-        ) {
 
             console.log(
-                "PAGE VISIBLE - LOADING BALANCE"
+                "✅ DATABASE BALANCE:",
+                balance
+            );
+
+
+            // ==========================================
+            // SHOW BALANCE
+            // ==========================================
+
+            balanceElement.textContent =
+                balance.toLocaleString("en-US") +
+                " ETB";
+
+
+            // ==========================================
+            // ALSO UPDATE OTHER BALANCE ELEMENTS
+            // ==========================================
+
+            const ids = [
+                "walletBalance",
+                "availableBalance",
+                "currentBalance",
+                "userBalance"
+            ];
+
+
+            ids.forEach(function (id) {
+
+                const element =
+                    document.getElementById(id);
+
+                if (element) {
+
+                    element.textContent =
+                        balance.toLocaleString("en-US") +
+                        " ETB";
+
+                }
+
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "❌ WALLET LOAD ERROR:",
+                error
+            );
+
+            balanceElement.textContent =
+                "0 ETB";
+        }
+    }
+
+
+    // ==================================================
+    // MAKE FUNCTION GLOBAL
+    // ==================================================
+
+    window.loadWalletBalance =
+        loadWalletBalance;
+
+
+    // ==================================================
+    // PAGE LOADED
+    // ==================================================
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            console.log(
+                "✅ PUBLIC APP.JS LOADED"
             );
 
             loadWalletBalance();
 
         }
-
-    }
-);
+    );
 
 
-// ======================================================
-// AUTOMATIC BALANCE REFRESH
-// EVERY 5 SECONDS
-// ======================================================
+    // ==================================================
+    // WHEN USER RETURNS TO PAGE
+    // ==================================================
 
-setInterval(
-    function () {
+    window.addEventListener(
+        "pageshow",
+        function () {
 
-        loadWalletBalance();
-
-    },
-    5000
-);
-
-
-// ======================================================
-// MANUAL BALANCE REFRESH
-// ======================================================
-
-window.refreshWalletBalance =
-    loadWalletBalance;
-
-
-// ======================================================
-// DEPOSIT
-// ======================================================
-
-async function deposit() {
-
-
-    const amountInput =
-        document.getElementById(
-            "amount"
-        );
-
-
-    const txidInput =
-        document.getElementById(
-            "txid"
-        );
-
-
-    const message =
-        document.getElementById(
-            "message"
-        );
-
-
-    // ----------------------------------------------
-    // Check fields
-    // ----------------------------------------------
-
-    if (
-        !amountInput ||
-        !txidInput
-    ) {
-
-        console.log(
-            "Deposit fields not found."
-        );
-
-        return;
-    }
-
-
-    // ----------------------------------------------
-    // Get values
-    // ----------------------------------------------
-
-    const amount =
-        Number(
-            amountInput.value
-        );
-
-
-    const txid =
-        txidInput.value.trim();
-
-
-    const phone =
-        getUserPhone();
-
-
-    // ----------------------------------------------
-    // Login check
-    // ----------------------------------------------
-
-    if (!phone) {
-
-        if (message) {
-
-            message.style.color =
-                "red";
-
-            message.textContent =
-                "Please login first.";
+            loadWalletBalance();
 
         }
-
-        return;
-    }
+    );
 
 
-    // ----------------------------------------------
-    // Amount check
-    // ----------------------------------------------
+    // ==================================================
+    // WHEN PAGE BECOMES VISIBLE
+    // ==================================================
 
-    if (
-        !amount ||
-        amount <= 0
-    ) {
+    document.addEventListener(
+        "visibilitychange",
+        function () {
 
-        if (message) {
+            if (
+                document.visibilityState ===
+                "visible"
+            ) {
 
-            message.style.color =
-                "red";
-
-            message.textContent =
-                "Please enter a valid amount.";
-
-        }
-
-        return;
-    }
-
-
-    // ----------------------------------------------
-    // TXID check
-    // ----------------------------------------------
-
-    if (!txid) {
-
-        if (message) {
-
-            message.style.color =
-                "red";
-
-            message.textContent =
-                "Please enter your Telebirr TXID.";
-
-        }
-
-        return;
-    }
-
-
-    try {
-
-
-        if (message) {
-
-            message.style.color =
-                "black";
-
-            message.textContent =
-                "Submitting deposit...";
-
-        }
-
-
-        // ------------------------------------------
-        // Send deposit to server
-        // ------------------------------------------
-
-        const response =
-            await fetch(
-                "/deposit/create",
-                {
-                    method: "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            phone:
-                                phone,
-
-                            amount:
-                                amount,
-
-                            txid:
-                                txid
-
-                        })
-
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        console.log(
-            "DEPOSIT RESPONSE:",
-            data
-        );
-
-
-        // ------------------------------------------
-        // Deposit failed
-        // ------------------------------------------
-
-        if (
-            !response.ok ||
-            !data.success
-        ) {
-
-            if (message) {
-
-                message.style.color =
-                    "red";
-
-                message.textContent =
-                    data.message ||
-                    "Deposit failed.";
+                loadWalletBalance();
 
             }
 
-            return;
         }
-
-
-        // ------------------------------------------
-        // Deposit submitted
-        // ------------------------------------------
-
-        if (message) {
-
-            message.style.color =
-                "green";
-
-            message.textContent =
-                data.message ||
-                "Deposit submitted successfully.";
-
-        }
-
-
-        // Clear fields
-
-        amountInput.value = "";
-
-        txidInput.value = "";
-
-
-        // Refresh balance
-
-        await loadWalletBalance();
-
-
-    } catch (error) {
-
-        console.error(
-            "DEPOSIT ERROR:",
-            error
-        );
-
-
-        if (message) {
-
-            message.style.color =
-                "red";
-
-            message.textContent =
-                "Server error. Please try again.";
-
-        }
-
-    }
-
-}
-
-
-// ======================================================
-// MAKE DEPOSIT AVAILABLE TO HTML
-// ======================================================
-
-window.deposit =
-    deposit;
-
-
-// ======================================================
-// LOGOUT
-// ======================================================
-
-function logout() {
-
-
-    localStorage.removeItem(
-        "phone"
     );
 
 
-    localStorage.removeItem(
-        "userPhone"
+    // ==================================================
+    // REFRESH EVERY 5 SECONDS
+    // ==================================================
+
+    setInterval(
+        function () {
+
+            loadWalletBalance();
+
+        },
+        5000
     );
 
 
-    localStorage.removeItem(
-        "user"
-    );
-
-
-    sessionStorage.removeItem(
-        "phone"
-    );
-
-
-    sessionStorage.removeItem(
-        "userPhone"
-    );
-
-
-    window.location.href =
-        "/";
-
-}
-
-
-window.logout =
-    logout;
-
-
-// ======================================================
-// LOAD CURRENT USER
-// ======================================================
-
-async function loadCurrentUser() {
-
-
-    const phone =
-        getUserPhone();
-
-
-    if (!phone) {
-
-        return null;
-
-    }
-
-
-    try {
-
-
-        const response =
-            await fetch(
-                "/api/wallet/" +
-                encodeURIComponent(
-                    phone
-                ) +
-                "?t=" +
-                Date.now(),
-
-                {
-                    method:
-                        "GET",
-
-                    cache:
-                        "no-store",
-
-                    headers: {
-
-                        "Cache-Control":
-                            "no-cache"
-
-                    }
-
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        console.log(
-            "CURRENT USER:",
-            data
-        );
-
-
-        if (!data.success) {
-
-            console.log(
-                "Could not load user:",
-                data.message
-            );
-
-            return null;
-
-        }
-
-
-        return data;
-
-
-    } catch (error) {
-
-
-        console.error(
-            "CURRENT USER ERROR:",
-            error
-        );
-
-
-        return null;
-
-    }
-
-}
-
-
-window.loadCurrentUser =
-    loadCurrentUser;
-
-
-// ======================================================
-// END OF PUBLIC APP.JS
-// ======================================================
+})();

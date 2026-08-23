@@ -892,184 +892,365 @@ router.post("/user/block/:id", async (req, res) => {
     }
 
 });
-// ======================================
-// APPROVE DEPOSIT
-// ADD DEPOSIT + 600 ETB REFERRAL BONUS
-// ======================================
+// ======================================================
+// ADMIN APPROVE DEPOSIT
+// ADD DEPOSIT MONEY TO DEPOSITOR'S PRIVATE WALLET
+// ADD 600 ETB REFERRAL BONUS TO REFERRER
+// ======================================================
 
 router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
 
     try {
 
+        console.log("======================================");
+        console.log("APPROVING DEPOSIT:", req.params.id);
+
+        // ----------------------------------------------
+        // FIND DEPOSIT
+        // ----------------------------------------------
+
         const deposit = await Deposit.findById(req.params.id);
 
         if (!deposit) {
-            return res.json({
+
+            return res.status(404).json({
                 success: false,
                 message: "Deposit not found."
             });
+
         }
+
+        console.log("Deposit phone:", deposit.phone);
+        console.log("Deposit amount:", deposit.amount);
+        console.log("Deposit status:", deposit.status);
+
+
+        // ----------------------------------------------
+        // PREVENT DOUBLE APPROVAL
+        // ----------------------------------------------
 
         if (deposit.status === "Approved") {
+
             return res.json({
                 success: false,
-                message: "Deposit is already approved."
+                message: "This deposit is already approved."
             });
+
         }
+
+
+        // ----------------------------------------------
+        // FIND EXACT DEPOSITOR
+        // ----------------------------------------------
+
+        const phone = String(deposit.phone || "").trim();
 
         const user = await User.findOne({
-            phone: deposit.phone
+            phone: phone
         });
 
+
         if (!user) {
-            return res.json({
+
+            console.log(
+                "USER NOT FOUND FOR PHONE:",
+                phone
+            );
+
+            return res.status(404).json({
                 success: false,
                 message:
-                    "User not found for phone: " + deposit.phone
+                    "User account not found for phone: " +
+                    phone
             });
+
         }
 
-        const amount = Number(deposit.amount);
 
-        if (!Number.isFinite(amount) || amount <= 0) {
-            return res.json({
+        // ----------------------------------------------
+        // DEPOSIT AMOUNT
+        // ----------------------------------------------
+
+        const depositAmount =
+            Number(deposit.amount || 0);
+
+
+        if (!Number.isFinite(depositAmount) ||
+            depositAmount <= 0) {
+
+            return res.status(400).json({
                 success: false,
                 message: "Invalid deposit amount."
             });
+
         }
 
-        // ----------------------------------
+
+        // ----------------------------------------------
         // OLD BALANCE
-        // ----------------------------------
+        // ----------------------------------------------
 
-        const oldBalance = Number(user.balance || 0);
+        const oldBalance =
+            Number(user.balance || 0);
 
-        // ----------------------------------
-        // ADD DEPOSIT
-        // ----------------------------------
 
-        user.balance = oldBalance + amount;
+        // ----------------------------------------------
+        // ADD DEPOSIT TO DEPOSITOR
+        // ----------------------------------------------
 
-        // ----------------------------------
-        // REFERRAL BONUS
-        // ----------------------------------
+        const newBalance =
+            oldBalance + depositAmount;
 
-        let bonus = 0;
 
-        if (
-            amount >= 5000 &&
-            user.referredBy &&
-            user.referralPaid !== true
-        ) {
+        user.balance = newBalance;
 
-            const referrer = await User.findOne({
-                referralCode: user.referredBy
-            });
-
-            if (referrer) {
-
-                referrer.balance =
-                    Number(referrer.balance || 0) + 600;
-
-                referrer.referralEarnings =
-                    Number(referrer.referralEarnings || 0) + 600;
-
-                referrer.invitedUsers =
-                    Number(referrer.invitedUsers || 0) + 1;
-
-                await referrer.save();
-
-                user.referralPaid = true;
-
-                bonus = 600;
-
-                await Transaction.create({
-                    phone: referrer.phone,
-                    type: "Referral Bonus",
-                    amount: 600,
-                    status: "Approved",
-                    reference:
-                        "REFERRAL-" + deposit._id
-                });
-
-                await Notification.create({
-                    phone: referrer.phone,
-                    title: "Referral Bonus",
-                    message:
-                        "You received 600 ETB referral bonus."
-                });
-            }
-        }
-
-        // ----------------------------------
-        // SAVE DEPOSITOR
-        // ----------------------------------
 
         await user.save();
 
-        // ----------------------------------
+
+        // ----------------------------------------------
+        // VERIFY DATABASE SAVE
+        // ----------------------------------------------
+
+        const savedUser =
+            await User.findOne({
+                phone: phone
+            });
+
+
+        console.log(
+            "OLD BALANCE:",
+            oldBalance
+        );
+
+        console.log(
+            "DEPOSIT:",
+            depositAmount
+        );
+
+        console.log(
+            "NEW BALANCE:",
+            savedUser.balance
+        );
+
+
+        // ----------------------------------------------
         // APPROVE DEPOSIT
-        // ----------------------------------
+        // ----------------------------------------------
 
         deposit.status = "Approved";
-        deposit.bonusAdded = bonus === 600;
 
         await deposit.save();
 
-        // ----------------------------------
+
+        // ----------------------------------------------
         // DEPOSIT TRANSACTION
-        // ----------------------------------
+        // ----------------------------------------------
 
         await Transaction.create({
-            phone: user.phone,
+
+            phone: phone,
+
             type: "Deposit",
-            amount: amount,
+
+            amount: depositAmount,
+
             status: "Approved",
-            reference: "DEPOSIT-" + deposit._id
+
+            reference:
+                "DEP-" + deposit._id.toString()
+
         });
 
-        // ----------------------------------
-        // USER NOTIFICATION
-        // ----------------------------------
+
+        // ----------------------------------------------
+        // NOTIFICATION TO DEPOSITOR
+        // ----------------------------------------------
 
         await Notification.create({
-            phone: user.phone,
+
+            phone: phone,
+
             title: "Deposit Approved",
+
             message:
-                amount +
-                " ETB has been added to your wallet." +
-                (bonus === 600
-                    ? " Referral bonus: 600 ETB."
-                    : "")
+                depositAmount +
+                " ETB has been added to your wallet."
+
         });
 
-        console.log("==============================");
-        console.log("DEPOSIT APPROVED");
-        console.log("PHONE:", user.phone);
-        console.log("DEPOSIT:", amount);
-        console.log("BONUS:", bonus);
-        console.log("OLD BALANCE:", oldBalance);
-        console.log("NEW BALANCE:", user.balance);
-        console.log("==============================");
+
+        // ==================================================
+        // REFERRAL BONUS
+        // 600 ETB GOES TO THE PERSON WHO INVITED THIS USER
+        // ==================================================
+
+        let referralBonus = 0;
+        let referrerPhone = null;
+
+
+        if (
+            user.referredBy &&
+            !user.referralPaid
+        ) {
+
+            const referrer =
+                await User.findOne({
+
+                    referralCode:
+                        user.referredBy
+
+                });
+
+
+            if (referrer) {
+
+                const oldReferrerBalance =
+                    Number(referrer.balance || 0);
+
+
+                referrer.balance =
+                    oldReferrerBalance + 600;
+
+
+                referrer.referralEarnings =
+                    Number(
+                        referrer.referralEarnings || 0
+                    ) + 600;
+
+
+                referrer.invitedUsers =
+                    Number(
+                        referrer.invitedUsers || 0
+                    ) + 1;
+
+
+                await referrer.save();
+
+
+                // Mark this user's first deposit
+                // as referral bonus paid
+
+                user.referralPaid = true;
+
+                await user.save();
+
+
+                referralBonus = 600;
+
+                referrerPhone =
+                    referrer.phone;
+
+
+                // Referral transaction
+
+                await Transaction.create({
+
+                    phone: referrer.phone,
+
+                    type: "Referral Bonus",
+
+                    amount: 600,
+
+                    status: "Approved",
+
+                    reference:
+                        "BONUS-" +
+                        deposit._id.toString()
+
+                });
+
+
+                // Referral notification
+
+                await Notification.create({
+
+                    phone: referrer.phone,
+
+                    title: "Referral Bonus",
+
+                    message:
+                        "You received 600 ETB referral bonus because " +
+                        phone +
+                        " made their first approved deposit."
+
+                });
+
+
+                console.log(
+                    "REFERRAL BONUS 600 ETB ADDED TO:",
+                    referrer.phone
+                );
+
+            }
+
+        }
+
+
+        // ----------------------------------------------
+        // FINAL DATABASE CHECK
+        // ----------------------------------------------
+
+        const finalUser =
+            await User.findOne({
+                phone: phone
+            });
+
+
+        console.log(
+            "FINAL DEPOSITOR BALANCE:",
+            finalUser.balance
+        );
+
+        console.log(
+            "======================================"
+        );
+
+
+        // ----------------------------------------------
+        // SEND RESPONSE TO ADMIN
+        // ----------------------------------------------
 
         return res.json({
+
             success: true,
-            message: "Deposit approved successfully.",
-            phone: user.phone,
-            depositAmount: amount,
-            bonus: bonus,
-            balance: user.balance
+
+            message:
+                "Deposit approved. " +
+                depositAmount +
+                " ETB added to user's wallet.",
+
+            phone: phone,
+
+            depositAmount: depositAmount,
+
+            balance:
+                Number(finalUser.balance || 0),
+
+            referralBonus: referralBonus,
+
+            referrerPhone: referrerPhone
+
         });
+
 
     } catch (err) {
 
-        console.log("APPROVE DEPOSIT ERROR:", err);
+        console.error(
+            "APPROVE DEPOSIT ERROR:",
+            err
+        );
 
         return res.status(500).json({
+
             success: false,
+
             message: err.message
+
         });
+
     }
+
 });
 // ======================================
 // GET USER DETAILS
