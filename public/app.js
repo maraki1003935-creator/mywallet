@@ -792,3 +792,131 @@
 
 
 })();
+// ======================================================
+// TEMPORARY WALLET DEBUG PANEL
+// ======================================================
+
+(function () {
+
+    const debugBox = document.createElement("div");
+
+    debugBox.id = "walletDebugBox";
+
+    debugBox.style.position = "fixed";
+    debugBox.style.bottom = "10px";
+    debugBox.style.left = "10px";
+    debugBox.style.right = "10px";
+    debugBox.style.maxHeight = "250px";
+    debugBox.style.overflowY = "auto";
+    debugBox.style.background = "black";
+    debugBox.style.color = "lime";
+    debugBox.style.padding = "12px";
+    debugBox.style.fontSize = "13px";
+    debugBox.style.zIndex = "999999";
+    debugBox.style.borderRadius = "8px";
+    debugBox.style.fontFamily = "monospace";
+
+    debugBox.innerHTML =
+        "<b>WALLET DEBUG</b><br>";
+
+    document.body.appendChild(debugBox);
+
+
+    function debug(message) {
+
+        console.log(message);
+
+        debugBox.innerHTML +=
+            "<div>" +
+            String(message) +
+            "</div>";
+
+        debugBox.scrollTop =
+            debugBox.scrollHeight;
+    }
+
+
+    // Check phone
+    const phone =
+        localStorage.getItem("phone") ||
+        localStorage.getItem("userPhone") ||
+        sessionStorage.getItem("phone") ||
+        sessionStorage.getItem("userPhone");
+
+    debug("PHONE = " + phone);
+
+
+    if (!phone) {
+
+        debug("❌ NO PHONE FOUND");
+
+        return;
+    }
+
+
+    // Request wallet
+    const url =
+        "/api/wallet/" +
+        encodeURIComponent(phone) +
+        "?debug=" +
+        Date.now();
+
+    debug("REQUEST = " + url);
+
+
+    fetch(url, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
+        }
+    })
+
+    .then(function (response) {
+
+        debug(
+            "HTTP STATUS = " +
+            response.status
+        );
+
+        return response.json();
+
+    })
+
+    .then(function (data) {
+
+        debug(
+            "API RESPONSE = " +
+            JSON.stringify(data)
+        );
+
+
+        if (data.success) {
+
+            debug(
+                "✅ DATABASE BALANCE = " +
+                data.balance
+            );
+
+        } else {
+
+            debug(
+                "❌ API ERROR = " +
+                data.message
+            );
+
+        }
+
+    })
+
+    .catch(function (error) {
+
+        debug(
+            "❌ FETCH ERROR = " +
+            error
+        );
+
+    });
+
+})();
