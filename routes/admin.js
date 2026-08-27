@@ -893,24 +893,21 @@ router.post("/user/block/:id", async (req, res) => {
 
 });
 // ======================================
-// ADMIN APPROVE DEPOSIT
-// ADD DEPOSIT + 600 BONUS TO USER
+// APPROVE DEPOSIT
+// ADD DEPOSIT + 600 BONUS TO USER WALLET
 // ======================================
 
 router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
-
     try {
-
         const deposit = await Deposit.findById(req.params.id);
 
         if (!deposit) {
-            return res.json({
+            return res.status(404).json({
                 success: false,
                 message: "Deposit not found."
             });
         }
 
-        // Prevent double approval
         if (deposit.status === "Approved") {
             return res.json({
                 success: false,
@@ -918,12 +915,34 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
             });
         }
 
+        // IMPORTANT:
+        // Use the phone stored in THIS deposit.
         const phone = String(deposit.phone || "").trim();
+
+        console.log("======================================");
+        console.log("APPROVING DEPOSIT");
+        console.log("Deposit ID:", deposit._id);
+        console.log("Deposit phone:", phone);
+        console.log("Deposit amount:", deposit.amount);
 
         if (!phone) {
             return res.json({
                 success: false,
                 message: "Deposit has no phone number."
+            });
+        }
+
+        // Find the exact user who made this deposit
+        const user = await User.findOne({
+            phone: phone
+        });
+
+        if (!user) {
+            console.log("USER NOT FOUND:", phone);
+
+            return res.json({
+                success: false,
+                message: "User not found for phone: " + phone
             });
         }
 
@@ -936,211 +955,121 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
             });
         }
 
-        console.log("======================================");
-        console.log("APPROVING DEPOSIT");
-        console.log("Deposit ID:", deposit._id.toString());
-        console.log("Deposit phone:", phone);
-        console.log("Deposit amount:", depositAmount);
-
-        // ======================================
-        // FIND USER BY EXACT DEPOSIT PHONE
-        // ======================================
-
-        const user = await User.findOne({
-            phone: phone
-        });
-
-        if (!user) {
-
-            console.log("USER NOT FOUND:", phone);
-
-            return res.json({
-                success: false,
-                message: "User not found for phone: " + phone
-            });
-
-        }
-
         console.log("USER FOUND:", user.phone);
-        console.log("OLD BALANCE:", user.balance);
+        console.log("OLD USER BALANCE:", user.balance);
 
         // ======================================
-        // ADD DEPOSIT
+        // ADD DEPOSIT TO PRIVATE USER WALLET
         // ======================================
 
-        const oldBalance =
-            Number(user.balance || 0);
-
-        user.balance =
-            oldBalance + depositAmount;
-
-        // ======================================
-        // ADD 600 BONUS
-        // ======================================
+        const oldBalance = Number(user.balance || 0);
 
         let bonus = 0;
 
-        if (!user.referralPaid) {
+        // Add deposited money
+        user.balance = oldBalance + depositAmount;
 
+        // ======================================
+        // ADD 600 ETB BONUS
+        // ======================================
+
+        if (user.referralPaid !== true) {
             bonus = 600;
 
             user.balance =
                 Number(user.balance || 0) + bonus;
 
             user.referralPaid = true;
-
         }
 
         // ======================================
-        // SAVE USER
+        // SAVE THE ACTUAL USER DOCUMENT
         // ======================================
 
         await user.save();
+
+        console.log("NEW USER BALANCE:", user.balance);
+
+        // ======================================
+        // MARK DEPOSIT APPROVED
+        // ======================================
+
+        deposit.status = "Approved";
+        await deposit.save();
+
+        // ======================================
+        // CREATE DEPOSIT TRANSACTION
+        // ======================================
+
+        await Transaction.create({
+            phone: user.phone,
+            type: "Deposit",
+            amount: depositAmount,
+            status: "Approved",
+            reference: "DEP-" + deposit._id
+        });
+
+        // ======================================
+        // CREATE BONUS TRANSACTION
+        // ======================================
+
+        if (bonus === 600) {
+            await Transaction.create({
+                phone: user.phone,
+                type: "Deposit Bonus",
+                amount: 600,
+                status: "Approved",
+                reference: "BONUS-" + deposit._id
+            });
+        }
+
+        // ======================================
+        // NOTIFY USER
+        // ======================================
+
+        await Notification.create({
+            phone: user.phone,
+            title: "Deposit Approved",
+            message:
+                depositAmount +
+                " ETB was added to your wallet." +
+                (bonus === 600
+                    ? " You also received 600 ETB bonus."
+                    : "")
+        });
 
         // ======================================
         // READ USER AGAIN FROM DATABASE
         // ======================================
 
-        const savedUser =
-            await User.findOne({
-                phone: phone
-            });
+        const savedUser = await User.findOne({
+            phone: phone
+        });
 
         console.log(
-            "DATABASE BALANCE AFTER SAVE:",
+            "DATABASE BALANCE AFTER APPROVAL:",
             savedUser ? savedUser.balance : "NOT FOUND"
         );
 
-        if (!savedUser) {
-
-            return res.status(500).json({
-                success: false,
-                message: "User disappeared after balance save."
-            });
-
-        }
-
-        // ======================================
-        // APPROVE DEPOSIT
-        // ======================================
-
-        deposit.status = "Approved";
-
-        await deposit.save();
-
-        // ======================================
-        // TRANSACTION
-        // ======================================
-
-        await Transaction.create({
-
-            phone: phone,
-
-            type: "Deposit",
-
-            amount: depositAmount,
-
-            status: "Approved",
-
-            reference:
-                "DEP-" + deposit._id
-
-        });
-
-        // ======================================
-        // BONUS TRANSACTION
-        // ======================================
-
-        if (bonus === 600) {
-
-            await Transaction.create({
-
-                phone: phone,
-
-                type: "Deposit Bonus",
-
-                amount: 600,
-
-                status: "Approved",
-
-                reference:
-                    "BONUS-" + deposit._id
-
-            });
-
-        }
-
-        // ======================================
-        // NOTIFICATION
-        // ======================================
-
-        await Notification.create({
-
-            phone: phone,
-
-            title: "Deposit Approved",
-
-            message:
-                depositAmount +
-                " ETB was added to your wallet." +
-                (
-                    bonus === 600
-                        ? " You also received 600 ETB bonus."
-                        : ""
-                )
-
-        });
-
-        console.log(
-            "FINAL BALANCE:",
-            savedUser.balance
-        );
-
-        console.log(
-            "DEPOSIT APPROVAL COMPLETE"
-        );
-
-        console.log(
-            "======================================"
-        );
+        console.log("======================================");
 
         return res.json({
-
             success: true,
-
-            message:
-                "Deposit approved. Money and bonus added.",
-
+            message: "Deposit approved. Money added to user's private wallet.",
             phone: phone,
-
-            depositAmount:
-                depositAmount,
-
-            bonus:
-                bonus,
-
-            balance:
-                Number(savedUser.balance || 0)
-
+            depositAmount: depositAmount,
+            bonus: bonus,
+            balance: Number(savedUser.balance || 0)
         });
 
-    } catch (err) {
-
-        console.error(
-            "APPROVE DEPOSIT ERROR:",
-            err
-        );
+    } catch (error) {
+        console.error("APPROVE DEPOSIT ERROR:", error);
 
         return res.status(500).json({
-
             success: false,
-
-            message: err.message
-
+            message: error.message
         });
-
     }
-
 });
 // ======================================
 // GET USER DETAILS
