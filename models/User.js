@@ -2,46 +2,92 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
 
+    // ======================================
+    // USER PHONE
+    // ======================================
+
     phone: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        trim: true
     },
+
+
+    // ======================================
+    // PRIVATE WALLET BALANCE
+    // ======================================
 
     balance: {
         type: Number,
         default: 0
     },
 
+
+    // ======================================
+    // USER STATUS
+    // ======================================
+
     blocked: {
         type: Boolean,
         default: false
     },
 
+
+    // ======================================
+    // USER'S OWN REFERRAL CODE
+    // ======================================
+
     referralCode: {
         type: String,
-        unique: true
+        unique: true,
+        sparse: true
     },
+
+
+    // ======================================
+    // REFERRAL CODE USED BY THIS USER
+    // ======================================
 
     referredBy: {
         type: String,
         default: ""
     },
 
+
+    // ======================================
+    // TOTAL REFERRAL EARNINGS
+    // ======================================
+
     referralEarnings: {
         type: Number,
         default: 0
     },
+
+
+    // ======================================
+    // NUMBER OF INVITED USERS
+    // ======================================
 
     invitedUsers: {
         type: Number,
         default: 0
     },
 
+
+    // ======================================
+    // REFERRAL BONUS PAID
+    // ======================================
+
     referralPaid: {
         type: Boolean,
         default: false
     },
+
+
+    // ======================================
+    // ACCOUNT CREATED DATE
+    // ======================================
 
     createdAt: {
         type: Date,
@@ -50,4 +96,10 @@ const userSchema = new mongoose.Schema({
 
 });
 
-module.exports = mongoose.model("User", userSchema);
+
+// ======================================
+// EXPORT USER MODEL
+// ======================================
+
+module.exports =
+    mongoose.model("User", userSchema);

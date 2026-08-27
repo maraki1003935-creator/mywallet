@@ -871,21 +871,19 @@ confirmPassword
 
 });
 // ======================================
-// GET PRIVATE USER WALLET BALANCE
+// PRIVATE USER WALLET BALANCE
 // ======================================
 
 app.get("/api/wallet/:phone", async (req, res) => {
 
     try {
 
-        const phone = decodeURIComponent(req.params.phone)
-            .trim();
+        const phone = decodeURIComponent(req.params.phone).trim();
 
-        console.log("=================================");
-        console.log("PRIVATE WALLET REQUEST");
-        console.log("PHONE FROM WEBSITE:", phone);
+        console.log("================================");
+        console.log("WALLET REQUEST");
+        console.log("PHONE RECEIVED:", phone);
 
-        // Find EXACT user
         const user = await User.findOne({
             phone: phone
         });
@@ -893,19 +891,18 @@ app.get("/api/wallet/:phone", async (req, res) => {
         if (!user) {
 
             console.log("USER NOT FOUND:", phone);
-            console.log("=================================");
+            console.log("================================");
 
-            return res.json({
+            return res.status(404).json({
                 success: false,
                 balance: 0,
-                phone: phone,
                 message: "User not found."
             });
         }
 
         console.log("USER FOUND:", user.phone);
-        console.log("USER BALANCE:", user.balance);
-        console.log("=================================");
+        console.log("MONGODB BALANCE:", user.balance);
+        console.log("================================");
 
         return res.json({
 
@@ -913,16 +910,13 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
             phone: user.phone,
 
-            balance: Number(user.balance || 0),
-
-            referralEarnings:
-                Number(user.referralEarnings || 0)
+            balance: Number(user.balance || 0)
 
         });
 
-    } catch (error) {
+    } catch (err) {
 
-        console.log("PRIVATE WALLET ERROR:", error);
+        console.log("WALLET API ERROR:", err);
 
         return res.status(500).json({
 
@@ -930,14 +924,13 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
             balance: 0,
 
-            message: error.message
+            message: err.message
 
         });
 
     }
 
 });
-
 
 // ======================================
 // HOME PAGE
@@ -1233,54 +1226,25 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
 });
 // ======================================
-// GET PRIVATE USER WALLET BALANCE
+// PRIVATE USER WALLET BALANCE
 // ======================================
 
 app.get("/api/wallet/:phone", async (req, res) => {
 
     try {
 
-        const phone = decodeURIComponent(req.params.phone).trim();
+        const phone =
+            decodeURIComponent(req.params.phone).trim();
 
-        console.log("=================================");
-        console.log("WALLET REQUEST");
-        console.log("PHONE FROM WEBSITE:", phone);
+        console.log(
+            "WALLET REQUEST PHONE:",
+            phone
+        );
 
-        let user = await User.findOne({
-            phone: phone
-        });
-
-        // Try +251 -> 09
-        if (!user && phone.startsWith("+251")) {
-
-            const localPhone =
-                "0" + phone.substring(4);
-
-            console.log(
-                "Trying local phone:",
-                localPhone
-            );
-
-            user = await User.findOne({
-                phone: localPhone
+        const user =
+            await User.findOne({
+                phone: phone
             });
-        }
-
-        // Try 09 -> +251
-        if (!user && phone.startsWith("0")) {
-
-            const internationalPhone =
-                "+251" + phone.substring(1);
-
-            console.log(
-                "Trying international phone:",
-                internationalPhone
-            );
-
-            user = await User.findOne({
-                phone: internationalPhone
-            });
-        }
 
         if (!user) {
 
@@ -1295,22 +1259,22 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
                 balance: 0,
 
-                message: "User not found."
+                message:
+                    "User not found."
 
             });
+
         }
 
         console.log(
-            "USER FOUND:",
+            "WALLET DATABASE USER:",
             user.phone
         );
 
         console.log(
-            "USER BALANCE:",
+            "WALLET DATABASE BALANCE:",
             user.balance
         );
-
-        console.log("=================================");
 
         return res.json({
 
@@ -1318,14 +1282,15 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
             phone: user.phone,
 
-            balance: Number(user.balance || 0)
+            balance:
+                Number(user.balance || 0)
 
         });
 
     } catch (err) {
 
-        console.log(
-            "WALLET ERROR:",
+        console.error(
+            "WALLET API ERROR:",
             err
         );
 
@@ -1335,7 +1300,8 @@ app.get("/api/wallet/:phone", async (req, res) => {
 
             balance: 0,
 
-            message: "Server error."
+            message:
+                "Server error."
 
         });
 
