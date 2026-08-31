@@ -2,16 +2,16 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-    <title>Withdraw History</title>
+    <title>Withdrawal History</title>
 
     <style>
+
         * {
             box-sizing: border-box;
         }
@@ -20,71 +20,73 @@
             margin: 0;
             padding: 20px;
             font-family: Arial, sans-serif;
-            background: #f3f4f6;
+            background: #f5f6fa;
             color: #222;
         }
 
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            max-width: 700px;
+            margin: auto;
         }
 
-        .header {
-            background: #1677ff;
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
+        h1 {
+            text-align: center;
             margin-bottom: 20px;
         }
 
-        .header h1 {
-            margin: 0 0 8px;
+        .balance-box {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .balance-title {
+            font-size: 15px;
+            color: #666;
+        }
+
+        .balance {
             font-size: 28px;
+            font-weight: bold;
+            margin-top: 5px;
         }
 
         .phone {
-            font-size: 15px;
-            opacity: 0.9;
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
         }
 
-        .card {
+        #message {
+            text-align: center;
+            padding: 15px;
+            color: #666;
+        }
+
+        .withdrawal {
             background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            overflow-x: auto;
+            padding: 18px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
 
-        .back {
-            display: inline-block;
-            margin-bottom: 15px;
-            text-decoration: none;
-            background: #1677ff;
-            color: white;
-            padding: 10px 18px;
-            border-radius: 8px;
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 6px 0;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 600px;
+        .label {
+            color: #666;
         }
 
-        th {
-            background: #1677ff;
-            color: white;
-            padding: 13px;
-            text-align: left;
-        }
-
-        td {
-            padding: 13px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
+        .amount {
+            font-size: 20px;
+            font-weight: bold;
         }
 
         .status {
@@ -92,547 +94,729 @@
         }
 
         .approved {
-            color: #159447;
+            color: green;
         }
 
         .pending {
-            color: #d88a00;
+            color: orange;
         }
 
         .rejected {
-            color: #d62828;
+            color: red;
         }
 
-        .loading,
-        .empty,
-        .error {
+        .back-button {
+            display: block;
             text-align: center;
-            padding: 25px;
+            margin-top: 20px;
+            padding: 13px;
+            background: #222;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
         }
 
-        .error {
-            color: #d62828;
+        .refresh-button {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #333;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 15px;
         }
 
-        @media (max-width: 600px) {
-
-            body {
-                padding: 10px;
-            }
-
-            .header h1 {
-                font-size: 23px;
-            }
-
-            .card {
-                padding: 12px;
-            }
-
-            th,
-            td {
-                padding: 10px;
-                font-size: 14px;
-            }
+        .refresh-button:active {
+            transform: scale(0.98);
         }
+
     </style>
+
 </head>
+
 
 <body>
 
 <div class="container">
 
-    <!-- HEADER -->
-    <div class="header">
+    <h1>Withdrawal History</h1>
 
-        <h1>💸 Withdraw History</h1>
 
-        <div class="phone" id="userPhone">
-            Loading user...
+    <!-- ============================= -->
+    <!-- USER INFORMATION -->
+    <!-- ============================= -->
+
+    <div class="balance-box">
+
+        <div class="balance-title">
+            Logged-in Phone
+        </div>
+
+        <div
+            id="phone"
+            class="phone">
+            Loading...
+        </div>
+
+        <br>
+
+        <div class="balance-title">
+            Current Wallet Balance
+        </div>
+
+        <div
+            id="balance"
+            class="balance">
+            Loading...
         </div>
 
     </div>
 
 
-    <!-- BACK BUTTON -->
+    <!-- ============================= -->
+    <!-- REFRESH -->
+    <!-- ============================= -->
+
+    <button
+        class="refresh-button"
+        onclick="loadWithdrawalHistory()">
+
+        Refresh History
+
+    </button>
+
+
+    <!-- ============================= -->
+    <!-- MESSAGE -->
+    <!-- ============================= -->
+
+    <div id="message">
+        Loading withdrawal history...
+    </div>
+
+
+    <!-- ============================= -->
+    <!-- WITHDRAWAL LIST -->
+    <!-- ============================= -->
+
+    <div id="withdrawals"></div>
+
+
+    <!-- ============================= -->
+    <!-- BACK -->
+    <!-- ============================= -->
 
     <a
         href="dashboard.html"
-        class="back"
-    >
-        ← Back to Wallet
+        class="back-button">
+
+        Back to Dashboard
+
     </a>
-
-
-    <!-- HISTORY -->
-
-    <div class="card">
-
-        <h2>Withdraw Transactions</h2>
-
-        <div
-            id="historyContainer"
-            class="loading"
-        >
-            Loading withdraw history...
-        </div>
-
-    </div>
 
 </div>
 
 
 <script>
 
-    // =====================================================
-    // GET LOGGED-IN PHONE
-    // =====================================================
+/* =====================================================
+   GET LOGGED-IN USER PHONE
+   ===================================================== */
 
-    function getUserPhone() {
+function getUserPhone() {
 
-        let phone =
-            localStorage.getItem("phone") ||
-            localStorage.getItem("userPhone") ||
-            sessionStorage.getItem("phone") ||
-            sessionStorage.getItem("userPhone");
+    let phone =
+        localStorage.getItem("phone") ||
+        localStorage.getItem("userPhone") ||
+        sessionStorage.getItem("phone") ||
+        sessionStorage.getItem("userPhone");
 
 
-        // Try saved user object
+    /* Check saved user object */
 
-        if (!phone) {
+    if (!phone) {
 
-            try {
+        try {
 
-                const user =
-                    JSON.parse(
-                        localStorage.getItem("user")
-                    );
-
-                if (user && user.phone) {
-
-                    phone = user.phone;
-
-                }
-
-            } catch (error) {
-
-                console.log(
-                    "Could not read saved user."
+            const savedUser =
+                JSON.parse(
+                    localStorage.getItem("user")
                 );
 
+            if (
+                savedUser &&
+                savedUser.phone
+            ) {
+
+                phone =
+                    savedUser.phone;
+
             }
 
+        } catch (error) {
+
+            console.log(
+                "Could not read saved user."
+            );
+
         }
-
-
-        if (!phone) {
-
-            return null;
-
-        }
-
-
-        return String(phone).trim();
 
     }
 
 
-    // =====================================================
-    // FORMAT DATE
-    // =====================================================
+    if (!phone) {
 
-    function formatDate(dateValue) {
-
-        if (!dateValue) {
-
-            return "-";
-
-        }
-
-        const date =
-            new Date(dateValue);
-
-
-        if (isNaN(date.getTime())) {
-
-            return "-";
-
-        }
-
-
-        return date.toLocaleString(
-            "en-US",
-            {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-            }
+        console.log(
+            "NO LOGGED-IN PHONE FOUND"
         );
 
-    }
-
-
-    // =====================================================
-    // STATUS CLASS
-    // =====================================================
-
-    function getStatusClass(status) {
-
-        const value =
-            String(status || "")
-                .toLowerCase();
-
-
-        if (value === "approved") {
-
-            return "approved";
-
-        }
-
-
-        if (value === "pending") {
-
-            return "pending";
-
-        }
-
-
-        if (
-            value === "rejected" ||
-            value === "declined"
-        ) {
-
-            return "rejected";
-
-        }
-
-
-        return "";
+        return null;
 
     }
 
 
-    // =====================================================
-    // LOAD WITHDRAW HISTORY
-    // =====================================================
+    return String(phone).trim();
 
-    async function loadWithdrawHistory() {
+}
 
-        const container =
-            document.getElementById(
-                "historyContainer"
+
+/* =====================================================
+   LOAD WALLET BALANCE
+   ===================================================== */
+
+async function loadWalletBalance() {
+
+    const phone =
+        getUserPhone();
+
+
+    if (!phone) {
+
+        document.getElementById(
+            "balance"
+        ).textContent = "0 ETB";
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/wallet/" +
+                encodeURIComponent(phone) +
+                "?t=" +
+                Date.now(),
+                {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: {
+                        "Cache-Control":
+                            "no-cache",
+                        "Pragma":
+                            "no-cache"
+                    }
+                }
             );
 
 
-        const phone =
-            getUserPhone();
+        const data =
+            await response.json();
 
 
         console.log(
-            "WITHDRAW HISTORY PHONE:",
-            phone
+            "WALLET RESPONSE:",
+            data
         );
 
 
-        const phoneElement =
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
             document.getElementById(
-                "userPhone"
-            );
-
-
-        if (phoneElement) {
-
-            phoneElement.textContent =
-                phone
-                    ? "Phone: " + phone
-                    : "No logged-in phone found";
-
-        }
-
-
-        if (!phone) {
-
-            container.className = "error";
-
-            container.innerHTML =
-                "❌ Please login first.";
+                "balance"
+            ).textContent = "0 ETB";
 
             return;
 
         }
 
 
-        try {
-
-            // =================================================
-            // IMPORTANT:
-            // THIS REQUEST USES THE LOGGED-IN USER PHONE
-            // =================================================
-
-            const url =
-                "/withdraw/history/" +
-                encodeURIComponent(phone) +
-                "?t=" +
-                Date.now();
-
-
-            console.log(
-                "REQUESTING:",
-                url
+        const balance =
+            Number(
+                data.balance || 0
             );
 
 
-            const response =
-                await fetch(
-                    url,
-                    {
-                        method: "GET",
-                        cache: "no-store",
-                        headers: {
-                            "Cache-Control":
-                                "no-cache",
-                            "Pragma":
-                                "no-cache"
-                        }
-                    }
-                );
+        document.getElementById(
+            "balance"
+        ).textContent =
+            balance.toLocaleString(
+                "en-US"
+            ) + " ETB";
 
 
-            console.log(
-                "HTTP STATUS:",
-                response.status
-            );
+    } catch (error) {
 
+        console.error(
+            "WALLET ERROR:",
+            error
+        );
 
-            const data =
-                await response.json();
+        document.getElementById(
+            "balance"
+        ).textContent =
+            "0 ETB";
 
+    }
 
-            console.log(
-                "WITHDRAW HISTORY RESPONSE:",
-                data
-            );
+}
 
 
-            if (!response.ok) {
+/* =====================================================
+   LOAD WITHDRAWAL HISTORY
+   ===================================================== */
 
-                throw new Error(
-                    data.message ||
-                    "Server error"
-                );
+async function loadWithdrawalHistory() {
 
-            }
+    const message =
+        document.getElementById(
+            "message"
+        );
 
+    const container =
+        document.getElementById(
+            "withdrawals"
+        );
 
-            if (!data.success) {
 
-                throw new Error(
-                    data.message ||
-                    "Could not load history"
-                );
+    const phone =
+        getUserPhone();
 
-            }
 
+    console.log(
+        "WITHDRAWAL PHONE:",
+        phone
+    );
 
-            // =================================================
-            // ACCEPT COMMON RESPONSE NAMES
-            // =================================================
 
-            const withdrawals =
-                data.withdrawals ||
-                data.history ||
-                data.transactions ||
-                [];
+    /* Show phone */
 
+    document.getElementById(
+        "phone"
+    ).textContent =
+        phone || "Not logged in";
 
-            if (
-                !Array.isArray(withdrawals) ||
-                withdrawals.length === 0
-            ) {
 
-                container.className = "empty";
+    if (!phone) {
 
-                container.innerHTML =
-                    "📭 No withdraw transactions found.";
+        message.textContent =
+            "Please login first.";
 
-                return;
+        container.innerHTML = "";
 
-            }
-
-
-            // =================================================
-            // CREATE TABLE
-            // =================================================
-
-            let html = `
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Date</th>
-
-                            <th>Amount</th>
-
-                            <th>Method</th>
-
-                            <th>Status</th>
-
-                            <th>Transaction ID</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-            `;
-
-
-            withdrawals.forEach(function (item) {
-
-                const amount =
-                    Number(
-                        item.amount || 0
-                    );
-
-
-                const status =
-                    item.status ||
-                    "Pending";
-
-
-                const method =
-                    item.method ||
-                    item.paymentMethod ||
-                    item.bank ||
-                    item.provider ||
-                    "-";
-
-
-                const txid =
-                    item.txid ||
-                    item.transactionId ||
-                    item._id ||
-                    "-";
-
-
-                const date =
-                    item.createdAt ||
-                    item.date ||
-                    item.createdDate;
-
-
-                html += `
-
-                    <tr>
-
-                        <td>
-                            ${formatDate(date)}
-                        </td>
-
-                        <td>
-                            <strong>
-                                ${amount.toLocaleString("en-US")}
-                                ETB
-                            </strong>
-                        </td>
-
-                        <td>
-                            ${method}
-                        </td>
-
-                        <td>
-
-                            <span
-                                class="status ${getStatusClass(status)}"
-                            >
-                                ${status}
-                            </span>
-
-                        </td>
-
-                        <td>
-                            ${txid}
-                        </td>
-
-                    </tr>
-
-                `;
-
-            });
-
-
-            html += `
-
-                    </tbody>
-
-                </table>
-
-            `;
-
-
-            container.className = "";
-
-            container.innerHTML = html;
-
-
-        } catch (error) {
-
-            console.error(
-                "WITHDRAW HISTORY ERROR:",
-                error
-            );
-
-
-            container.className =
-                "error";
-
-
-            container.innerHTML =
-                "❌ Could not load withdraw history.<br><br>" +
-                error.message;
-
-        }
+        return;
 
     }
 
 
-    // =====================================================
-    // PAGE LOAD
-    // =====================================================
+    try {
 
-    document.addEventListener(
-        "DOMContentLoaded",
-        function () {
+        message.textContent =
+            "Loading withdrawal history...";
 
-            console.log(
-                "✅ withdraw-history.html loaded"
+
+        /*
+         * IMPORTANT:
+         *
+         * This is the API route expected
+         * from your admin.js:
+         *
+         * /api/admin/withdrawals/:phone
+         */
+
+        const url =
+            "/api/admin/withdrawals/" +
+            encodeURIComponent(phone) +
+            "?t=" +
+            Date.now();
+
+
+        console.log(
+            "WITHDRAWAL API URL:",
+            url
+        );
+
+
+        const response =
+            await fetch(
+                url,
+                {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: {
+                        "Cache-Control":
+                            "no-cache",
+                        "Pragma":
+                            "no-cache"
+                    }
+                }
             );
 
-            loadWithdrawHistory();
+
+        console.log(
+            "WITHDRAWAL HTTP STATUS:",
+            response.status
+        );
+
+
+        /*
+         * Read response as text first.
+         *
+         * This prevents:
+         * Unexpected token '<'
+         *
+         * when the server sends HTML.
+         */
+
+        const text =
+            await response.text();
+
+
+        console.log(
+            "WITHDRAWAL RAW RESPONSE:",
+            text
+        );
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(text);
+
+        } catch (jsonError) {
+
+            console.error(
+                "SERVER DID NOT RETURN JSON:",
+                text
+            );
+
+
+            message.textContent =
+                "Server returned an invalid response. Check the API route.";
+
+            container.innerHTML = "";
+
+            return;
 
         }
-    );
 
 
-    // =====================================================
-    // REFRESH WHEN USER RETURNS
-    // =====================================================
+        console.log(
+            "WITHDRAWAL API DATA:",
+            data
+        );
 
-    window.addEventListener(
-        "pageshow",
-        function () {
 
-            loadWithdrawHistory();
+        if (!response.ok) {
+
+            message.textContent =
+                data.message ||
+                "Could not load withdrawal history.";
+
+            container.innerHTML = "";
+
+            return;
 
         }
-    );
+
+
+        if (!data.success) {
+
+            message.textContent =
+                data.message ||
+                "Could not load withdrawal history.";
+
+            container.innerHTML = "";
+
+            return;
+
+        }
+
+
+        /*
+         * Support both:
+         *
+         * { withdrawals: [...] }
+         *
+         * and
+         *
+         * [...]
+         */
+
+        const withdrawals =
+            Array.isArray(
+                data.withdrawals
+            )
+                ? data.withdrawals
+                : Array.isArray(data)
+                    ? data
+                    : [];
+
+
+        container.innerHTML = "";
+
+
+        if (
+            withdrawals.length === 0
+        ) {
+
+            message.textContent =
+                "No withdrawal history found.";
+
+            return;
+
+        }
+
+
+        message.textContent =
+            "";
+
+
+        withdrawals.forEach(
+            function (withdraw) {
+
+                const box =
+                    document.createElement(
+                        "div"
+                    );
+
+                box.className =
+                    "withdrawal";
+
+
+                /* =========================
+                   AMOUNT
+                   ========================= */
+
+                const amount =
+                    Number(
+                        withdraw.amount || 0
+                    );
+
+
+                /* =========================
+                   STATUS
+                   ========================= */
+
+                const status =
+                    String(
+                        withdraw.status ||
+                        "Pending"
+                    );
+
+
+                let statusClass =
+                    "pending";
+
+
+                if (
+                    status.toLowerCase() ===
+                    "approved"
+                ) {
+
+                    statusClass =
+                        "approved";
+
+                }
+
+
+                if (
+                    status.toLowerCase() ===
+                    "rejected"
+                ) {
+
+                    statusClass =
+                        "rejected";
+
+                }
+
+
+                /* =========================
+                   DATE
+                   ========================= */
+
+                let dateText =
+                    "Unknown date";
+
+
+                if (
+                    withdraw.createdAt
+                ) {
+
+                    const date =
+                        new Date(
+                            withdraw.createdAt
+                        );
+
+
+                    if (
+                        !isNaN(
+                            date.getTime()
+                        )
+                    ) {
+
+                        dateText =
+                            date.toLocaleString(
+                                "en-US"
+                            );
+
+                    }
+
+                }
+
+
+                /* =========================
+                   REFERENCE
+                   ========================= */
+
+                const reference =
+                    withdraw.reference ||
+                    withdraw._id ||
+                    "N/A";
+
+
+                box.innerHTML = `
+
+                    <div class="row">
+
+                        <span class="label">
+                            Amount
+                        </span>
+
+                        <span class="amount">
+                            ${amount.toLocaleString("en-US")}
+                            ETB
+                        </span>
+
+                    </div>
+
+
+                    <div class="row">
+
+                        <span class="label">
+                            Status
+                        </span>
+
+                        <span class="status ${statusClass}">
+                            ${status}
+                        </span>
+
+                    </div>
+
+
+                    <div class="row">
+
+                        <span class="label">
+                            Reference
+                        </span>
+
+                        <span>
+                            ${reference}
+                        </span>
+
+                    </div>
+
+
+                    <div class="row">
+
+                        <span class="label">
+                            Date
+                        </span>
+
+                        <span>
+                            ${dateText}
+                        </span>
+
+                    </div>
+
+                `;
+
+
+                container.appendChild(
+                    box
+                );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "WITHDRAWAL HISTORY ERROR:",
+            error
+        );
+
+
+        message.textContent =
+            "Could not load withdrawal history. Please try again.";
+
+
+        container.innerHTML = "";
+
+    }
+
+}
+
+
+/* =====================================================
+   PAGE LOAD
+   ===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        console.log(
+            "WITHDRAW-HISTORY PAGE LOADED"
+        );
+
+
+        loadWalletBalance();
+
+        loadWithdrawalHistory();
+
+    }
+);
+
+
+/* =====================================================
+   REFRESH WHEN RETURNING TO PAGE
+   ===================================================== */
+
+window.addEventListener(
+    "pageshow",
+    function () {
+
+        loadWalletBalance();
+
+        loadWithdrawalHistory();
+
+    }
+);
 
 </script>
 
 </body>
+
 </html>
