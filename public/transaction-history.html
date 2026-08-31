@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Transaction History</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            color: #222;
+        }
+
+        .header {
+            background: #1677ff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 25px auto;
+            padding: 0 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            overflow-x: auto;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 12px 18px;
+            background: #1677ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .back-button:hover {
+            opacity: 0.9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th {
+            background: #1677ff;
+            color: white;
+            padding: 14px;
+            text-align: left;
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background: #f7f7f7;
+        }
+
+        .approved {
+            color: green;
+            font-weight: bold;
+        }
+
+        .pending {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .rejected {
+            color: red;
+            font-weight: bold;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 30px;
+            color: red;
+        }
+
+        @media (max-width: 600px) {
+
+            .header h1 {
+                font-size: 23px;
+            }
+
+            .container {
+                margin-top: 15px;
+            }
+
+            .card {
+                padding: 12px;
+            }
+
+            th,
+            td {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <div class="header">
+
+        <h1>📜 Transaction History</h1>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <a
+            href="dashboard.html"
+            class="back-button"
+        >
+            ← Back to Wallet
+        </a>
+
+
+        <div class="card">
+
+
+            <div
+                id="loading"
+                class="loading"
+            >
+                Loading transactions...
+            </div>
+
+
+            <div
+                id="error"
+                class="error"
+                style="display:none;"
+            >
+                Unable to load transactions.
+            </div>
+
+
+            <div
+                id="empty"
+                class="empty"
+                style="display:none;"
+            >
+                No transactions found.
+            </div>
+
+
+            <table
+                id="transactionTable"
+                style="display:none;"
+            >
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Type
+                        </th>
+
+                        <th>
+                            Amount
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Date
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="transactionBody">
+
+                </tbody>
+
+            </table>
+
+
+        </div>
+
+
+    </div>
+
+
+<script>
+
+(function () {
+
+    "use strict";
+
+
+    // ==========================================
+    // GET LOGGED-IN USER PHONE
+    // ==========================================
+
+    function getUserPhone() {
+
+        let phone =
+            localStorage.getItem("phone") ||
+            localStorage.getItem("userPhone") ||
+            sessionStorage.getItem("phone") ||
+            sessionStorage.getItem("userPhone");
+
+
+        if (!phone) {
+
+            try {
+
+                const user =
+                    JSON.parse(
+                        localStorage.getItem("user")
+                    );
+
+                if (user && user.phone) {
+
+                    phone = user.phone;
+
+                }
+
+            } catch (error) {
+
+                console.log(
+                    "Could not read saved user."
+                );
+
+            }
+
+        }
+
+
+        if (!phone) {
+
+            console.log(
+                "No logged-in phone found."
+            );
+
+            return null;
+
+        }
+
+
+        return String(phone).trim();
+
+    }
+
+
+    // ==========================================
+    // LOAD TRANSACTIONS
+    // ==========================================
+
+    async function loadTransactions() {
+
+        const loading =
+            document.getElementById("loading");
+
+        const errorBox =
+            document.getElementById("error");
+
+        const empty =
+            document.getElementById("empty");
+
+        const table =
+            document.getElementById(
+                "transactionTable"
+            );
+
+        const body =
+            document.getElementById(
+                "transactionBody"
+            );
+
+
+        const phone =
+            getUserPhone();
+
+
+        if (!phone) {
+
+            loading.style.display = "none";
+
+            errorBox.style.display = "block";
+
+            errorBox.textContent =
+                "Please login first.";
+
+            return;
+
+        }
+
+
+        console.log(
+            "Loading transactions for:",
+            phone
+        );
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/transactions/" +
+                    encodeURIComponent(phone) +
+                    "?t=" +
+                    Date.now(),
+                    {
+                        method: "GET",
+                        cache: "no-store",
+                        headers: {
+                            "Cache-Control":
+                                "no-cache"
+                        }
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            console.log(
+                "Transaction API:",
+                data
+            );
+
+
+            loading.style.display = "none";
+
+
+            if (!response.ok ||
+                !data.success) {
+
+                errorBox.style.display =
+                    "block";
+
+                errorBox.textContent =
+                    data.message ||
+                    "Unable to load transactions.";
+
+                return;
+
+            }
+
+
+            const transactions =
+                data.transactions || [];
+
+
+            if (transactions.length === 0) {
+
+                empty.style.display =
+                    "block";
+
+                return;
+
+            }
+
+
+            body.innerHTML = "";
+
+
+            transactions.forEach(
+                function (transaction) {
+
+                    const row =
+                        document.createElement(
+                            "tr"
+                        );
+
+
+                    const typeCell =
+                        document.createElement(
+                            "td"
+                        );
+
+                    typeCell.textContent =
+                        transaction.type ||
+                        "Transaction";
+
+
+                    const amountCell =
+                        document.createElement(
+                            "td"
+                        );
+
+                    const amount =
+                        Number(
+                            transaction.amount || 0
+                        );
+
+
+                    amountCell.textContent =
+                        amount.toLocaleString(
+                            "en-US"
+                        ) + " ETB";
+
+
+                    const statusCell =
+                        document.createElement(
+                            "td"
+                        );
+
+
+                    const status =
+                        String(
+                            transaction.status ||
+                            "Pending"
+                        );
+
+
+                    statusCell.textContent =
+                        status;
+
+
+                    const statusLower =
+                        status.toLowerCase();
+
+
+                    if (
+                        statusLower ===
+                        "approved"
+                    ) {
+
+                        statusCell.className =
+                            "approved";
+
+                    } else if (
+                        statusLower ===
+                        "pending"
+                    ) {
+
+                        statusCell.className =
+                            "pending";
+
+                    } else if (
+                        statusLower ===
+                        "rejected"
+                    ) {
+
+                        statusCell.className =
+                            "rejected";
+
+                    }
+
+
+                    const dateCell =
+                        document.createElement(
+                            "td"
+                        );
+
+
+                    if (transaction.createdAt) {
+
+                        const date =
+                            new Date(
+                                transaction.createdAt
+                            );
+
+                        dateCell.textContent =
+                            date.toLocaleString();
+
+                    } else {
+
+                        dateCell.textContent =
+                            "-";
+
+                    }
+
+
+                    row.appendChild(
+                        typeCell
+                    );
+
+                    row.appendChild(
+                        amountCell
+                    );
+
+                    row.appendChild(
+                        statusCell
+                    );
+
+                    row.appendChild(
+                        dateCell
+                    );
+
+
+                    body.appendChild(row);
+
+                }
+            );
+
+
+            table.style.display =
+                "table";
+
+        } catch (err) {
+
+            console.error(
+                "Transaction error:",
+                err
+            );
+
+
+            loading.style.display =
+                "none";
+
+
+            errorBox.style.display =
+                "block";
+
+
+            errorBox.textContent =
+                "Server error loading transactions.";
+
+        }
+
+    }
+
+
+    // ==========================================
+    // START
+    // ==========================================
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            loadTransactions();
+
+        }
+    );
+
+
+})();
+
+</script>
+
+
+</body>
+
+</html>
