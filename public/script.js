@@ -17,6 +17,7 @@ if (sendBtn) {
 
         const phone = phoneInput.value.trim();
 
+
         // --------------------------------------
         // CHECK PHONE
         // --------------------------------------
@@ -44,29 +45,31 @@ if (sendBtn) {
                 "Please wait...";
 
 
-            const response = await fetch("/auth/login", {
+            const response = await fetch(
+                "/auth/login",
+                {
+                    method: "POST",
 
-                method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                headers: {
-
-                    "Content-Type": "application/json"
-
-                },
-
-                body: JSON.stringify({
-
-                    phone: phone
-
-                })
-
-            });
+                    body: JSON.stringify({
+                        phone: phone
+                    })
+                }
+            );
 
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
 
-            console.log("LOGIN RESPONSE:", data);
+            console.log(
+                "LOGIN RESPONSE:",
+                data
+            );
 
 
             // --------------------------------------
@@ -75,20 +78,78 @@ if (sendBtn) {
 
             if (data.success) {
 
-                // IMPORTANT:
-                // Save the EXACT phone number.
-                // The private wallet uses this.
+
+                // ==================================
+                // SAVE EXACT PHONE NUMBER
+                // ==================================
+
+                const loggedInPhone =
+                    phone.trim();
+
+
+                // ----------------------------------
+                // LOCAL STORAGE
+                // ----------------------------------
 
                 localStorage.setItem(
                     "phone",
-                    phone
+                    loggedInPhone
+                );
+
+                localStorage.setItem(
+                    "userPhone",
+                    loggedInPhone
                 );
 
 
-                // Also save user ID if your website
-                // uses it somewhere else.
+                // ----------------------------------
+                // SESSION STORAGE
+                // ----------------------------------
 
-                if (data.user && data.user._id) {
+                sessionStorage.setItem(
+                    "phone",
+                    loggedInPhone
+                );
+
+                sessionStorage.setItem(
+                    "userPhone",
+                    loggedInPhone
+                );
+
+
+                // ----------------------------------
+                // SAVE USER OBJECT
+                // ----------------------------------
+
+                let savedUser = {
+                    phone: loggedInPhone
+                };
+
+
+                if (data.user) {
+
+                    savedUser = {
+                        ...data.user,
+                        phone: loggedInPhone
+                    };
+
+                }
+
+
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify(savedUser)
+                );
+
+
+                // ----------------------------------
+                // SAVE USER ID
+                // ----------------------------------
+
+                if (
+                    data.user &&
+                    data.user._id
+                ) {
 
                     localStorage.setItem(
                         "userId",
@@ -98,13 +159,54 @@ if (sendBtn) {
                 }
 
 
+                // ==================================
+                // VERIFY PHONE WAS SAVED
+                // ==================================
+
                 console.log(
-                    "LOGIN PHONE SAVED:",
+                    "================================"
+                );
+
+                console.log(
+                    "LOGIN SUCCESS"
+                );
+
+                console.log(
+                    "PHONE SAVED:",
+                    loggedInPhone
+                );
+
+                console.log(
+                    "localStorage phone:",
                     localStorage.getItem("phone")
                 );
 
+                console.log(
+                    "localStorage userPhone:",
+                    localStorage.getItem("userPhone")
+                );
 
-                message.style.color = "green";
+                console.log(
+                    "sessionStorage phone:",
+                    sessionStorage.getItem("phone")
+                );
+
+                console.log(
+                    "SAVED USER:",
+                    localStorage.getItem("user")
+                );
+
+                console.log(
+                    "================================"
+                );
+
+
+                // --------------------------------------
+                // SUCCESS MESSAGE
+                // --------------------------------------
+
+                message.style.color =
+                    "green";
 
                 message.textContent =
                     "Login successful.";
@@ -124,7 +226,12 @@ if (sendBtn) {
 
             } else {
 
-                message.style.color = "red";
+                // --------------------------------------
+                // LOGIN FAILED
+                // --------------------------------------
+
+                message.style.color =
+                    "red";
 
                 message.textContent =
                     data.message ||
@@ -139,7 +246,9 @@ if (sendBtn) {
                 error
             );
 
-            message.style.color = "red";
+
+            message.style.color =
+                "red";
 
             message.textContent =
                 "Server error. Please try again.";
@@ -152,12 +261,39 @@ if (sendBtn) {
 
 
 // ======================================
-// CHECK SAVED PHONE
+// CHECK SAVED PHONE WHEN PAGE OPENS
 // ======================================
 
 console.log(
-    "Saved phone:",
+    "================================"
+);
+
+console.log(
+    "CHECKING SAVED LOGIN"
+);
+
+console.log(
+    "Phone:",
     localStorage.getItem("phone")
+);
+
+console.log(
+    "User phone:",
+    localStorage.getItem("userPhone")
+);
+
+console.log(
+    "Session phone:",
+    sessionStorage.getItem("phone")
+);
+
+console.log(
+    "User:",
+    localStorage.getItem("user")
+);
+
+console.log(
+    "================================"
 );
 
 
@@ -169,8 +305,21 @@ function logout() {
 
     localStorage.removeItem("phone");
 
+    localStorage.removeItem("userPhone");
+
     localStorage.removeItem("userId");
 
-    window.location.href = "/index.html";
+    localStorage.removeItem("user");
+
+    sessionStorage.removeItem("phone");
+
+    sessionStorage.removeItem("userPhone");
+
+
+    window.location.href =
+        "/index.html";
 
 }
+
+
+window.logout = logout;
