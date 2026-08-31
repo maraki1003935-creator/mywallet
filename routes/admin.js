@@ -975,21 +975,119 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
         user.balance = oldBalance + amount;
 
         // ======================================
-        // FIRST APPROVED DEPOSIT BONUS
-        // ======================================
+// NEW USER DEPOSIT BONUS
+// ======================================
 
-        let bonus = 0;
+let depositBonus = 0;
 
-        if (user.referralPaid !== true) {
+if (!user.referralPaid) {
 
-            bonus = 600;
+    depositBonus = 600;
 
-            user.balance =
-                Number(user.balance || 0) + bonus;
+    user.balance =
+        Number(user.balance || 0) + depositBonus;
 
-            user.referralPaid = true;
+    user.referralPaid = true;
+}
+
+
+// ======================================
+// REFERRER BONUS
+// ======================================
+
+let referralBonus = 0;
+let referrer = null;
+
+if (
+    user.referredBy &&
+    String(user.referredBy).trim() !== ""
+) {
+
+    // Find the person who invited this user
+    referrer = await User.findOne({
+        referralCode: String(user.referredBy).trim()
+    });
+
+
+    if (referrer) {
+
+        /*
+         * Give the referrer 600 ETB only once
+         * for this referred user.
+         *
+         * We use the new user's referralPaid
+         * to make sure the qualifying deposit
+         * happens only once.
+         */
+
+        if (depositBonus === 600) {
+
+            referralBonus = 600;
+
+            referrer.balance =
+                Number(referrer.balance || 0) +
+                referralBonus;
+
+            referrer.referralEarnings =
+                Number(referrer.referralEarnings || 0) +
+                referralBonus;
+
+            referrer.invitedUsers =
+                Number(referrer.invitedUsers || 0) + 1;
+
+            await referrer.save();
+
+
+            // ======================================
+            // REFERRER TRANSACTION
+            // ======================================
+
+            await Transaction.create({
+
+                phone: referrer.phone,
+
+                type: "Referral Bonus",
+
+                amount: referralBonus,
+
+                status: "Approved",
+
+                reference:
+                    "REF-" +
+                    user._id +
+                    "-" +
+                    deposit._id
+
+            });
+
+
+            // ======================================
+            // REFERRER NOTIFICATION
+            // ======================================
+
+            await Notification.create({
+
+                phone: referrer.phone,
+
+                title: "Referral Bonus",
+
+                message:
+                    "You received 600 ETB referral bonus because your invited user made a qualifying deposit."
+
+            });
+
         }
 
+    } else {
+
+        console.log(
+            "REFERRER NOT FOUND:",
+            user.referredBy
+        );
+
+    }
+
+}
         // ======================================
         // SAVE USER FIRST
         // ======================================
