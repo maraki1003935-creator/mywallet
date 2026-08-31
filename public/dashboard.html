@@ -1,846 +1,1505 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8">
+    <title>Wallet Dashboard</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
 
-<title>Wallet Dashboard</title>
+        body {
+            background: #f2f2f2;
+            padding-bottom: 100px;
+        }
 
-<style>
+        /* ==============================
+           TOP BLUE AREA
+        ============================== */
 
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial,sans-serif;
-}
+        .topbar {
+            background: linear-gradient(135deg, #0d6efd, #4e9eff);
+            color: white;
+            padding: 25px;
+            border-bottom-left-radius: 25px;
+            border-bottom-right-radius: 25px;
+        }
 
-body{
-background:#f2f2f2;
-}
+        .profile {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-.header{
-background:#0d6efd;
-color:white;
-padding:20px;
-text-align:center;
-font-size:24px;
-font-weight:bold;
-}
+        .profile-left {
+            display: flex;
+            align-items: center;
+        }
 
-.balance-card{
-width:95%;
-max-width:500px;
-margin:20px auto;
-background:white;
-border-radius:15px;
-padding:20px;
-box-shadow:0 2px 10px rgba(0,0,0,.2);
-text-align:center;
-}
+        .profile img {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 3px solid white;
+            object-fit: cover;
+            margin-right: 15px;
+        }
 
-.balance-card h2{
-color:#555;
-margin-bottom:10px;
-}
+        .profile h2 {
+            font-size: 22px;
+            margin: 0;
+        }
 
-.balance{
-font-size:35px;
-font-weight:bold;
-color:#0d6efd;
-margin-bottom:15px;
-}
+        .profile p {
+            margin: 3px 0;
+            font-size: 14px;
+        }
 
-.menu{
-width:95%;
-max-width:900px;
-margin:20px auto;
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-gap:15px;
-}
+        .eye-button {
+            background: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 20px;
+            cursor: pointer;
+        }
 
-.menu button{
+        /* ==============================
+           MAIN BALANCE
+        ============================== */
 
-padding:18px;
-border:none;
-border-radius:12px;
-background:white;
-cursor:pointer;
-font-size:16px;
-font-weight:bold;
-box-shadow:0 2px 8px rgba(0,0,0,.2);
-transition:.2s;
+        .balance-card {
+            width: 95%;
+            max-width: 900px;
+            margin: 20px auto;
+            background: white;
+            color: #222;
+            padding: 20px;
+            border-radius: 18px;
+            box-shadow: 0 5px 15px rgba(0,0,0,.15);
+        }
 
-}
+        .main-balance-card {
+            max-width: 570px;
+            margin-top: 25px;
+            text-align: center;
+        }
 
-.menu button:hover{
+        .balance-title {
+            font-size: 18px;
+            color: #666;
+        }
 
-background:#0d6efd;
-color:white;
+        .balance-value {
+            font-size: 40px;
+            font-weight: bold;
+            color: #0d6efd;
+            margin: 15px 0;
+        }
 
-}
+        .balance-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
 
-</style>
+        .balance-actions button {
+            width: 50%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
 
+        .deposit-btn {
+            background: #28a745;
+        }
+
+        .withdraw-btn {
+            background: #dc3545;
+        }
+
+        /* ==============================
+           QUICK ACTIONS
+        ============================== */
+
+        .section-title {
+            width: 95%;
+            max-width: 900px;
+            margin: 25px auto 15px;
+            font-size: 28px;
+        }
+
+        .menu {
+            width: 95%;
+            max-width: 900px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .menu button {
+            padding: 22px 10px;
+            border: none;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+
+        .menu button:hover {
+            background: #0d6efd;
+            color: white;
+        }
+
+        /* ==============================
+           STATISTICS
+        ============================== */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            text-align: center;
+        }
+
+        .stat-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .stat-box h4 {
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .stat-box h2 {
+            font-size: 25px;
+        }
+
+        /* ==============================
+           TRANSACTIONS
+        ============================== */
+
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .transaction-table th {
+            background: #0d6efd;
+            color: white;
+            padding: 12px;
+        }
+
+        .transaction-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .view-button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* ==============================
+           BOTTOM NAV
+        ============================== */
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75px;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,.2);
+            z-index: 9999;
+        }
+
+        .bottom-nav button {
+            background: none;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .notification-badge {
+            background: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 11px;
+        }
+
+        /* ==============================
+           DARK MODE
+        ============================== */
+
+        .dark {
+            background: #1d1d1d;
+            color: white;
+        }
+
+        .dark .balance-card,
+        .dark .menu button,
+        .dark .bottom-nav {
+            background: #2d2d2d;
+            color: white;
+        }
+
+        .dark .stat-box {
+            background: #3a3a3a;
+            color: white;
+        }
+
+        .dark .transaction-table {
+            color: white;
+        }
+
+        .dark-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 90px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 9998;
+        }
+
+        /* ==============================
+           MOBILE
+        ============================== */
+
+        @media (max-width: 600px) {
+
+            .menu {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .balance-value {
+                font-size: 38px;
+            }
+
+            .section-title {
+                font-size: 25px;
+            }
+        }
+    </style>
 </head>
 
-<body> <body>
-
-<style>
-
-.topbar{
-
-background:linear-gradient(135deg,#0d6efd,#4e9eff);
-
-color:white;
-
-padding:25px;
-
-border-bottom-left-radius:25px;
-
-border-bottom-right-radius:25px;
-
-}
-
-.profile{
-
-display:flex;
-
-align-items:center;
-
-justify-content:space-between;
-
-}
-
-.profile-left{
-
-display:flex;
-
-align-items:center;
-
-}
-
-.profile img{
-
-width:65px;
-
-height:65px;
-
-border-radius:50%;
-
-border:3px solid white;
-
-object-fit:cover;
-
-margin-right:15px;
-
-}
-
-.profile h2{
-
-margin:0;
-
-font-size:22px;
-
-}
-
-.profile p{
-
-margin:3px 0 0;
-
-font-size:14px;
-
-opacity:.9;
-
-}
-
-.balance-card{
-
-margin-top:25px;
-
-background:white;
-
-color:#222;
-
-padding:20px;
-
-border-radius:18px;
-
-box-shadow:0 5px 15px rgba(0,0,0,.2);
-
-}
-
-.balance-title{
-
-font-size:16px;
-
-color:#666;
-
-}
-
-.balance-value{
-
-font-size:34px;
-
-font-weight:bold;
-
-margin:15px 0;
-
-color:#0d6efd;
-
-}
-
-.balance-actions{
-
-display:flex;
-
-justify-content:space-between;
-
-margin-top:20px;
-
-}
-
-.balance-actions button{
-
-width:48%;
-
-padding:12px;
-
-border:none;
-
-border-radius:10px;
-
-font-size:15px;
-
-cursor:pointer;
-
-font-weight:bold;
-
-}
-
-.deposit-btn{
-
-background:#28a745;
-
-color:white;
-
-}
-
-.withdraw-btn{
-
-background:#dc3545;
-
-color:white;
-
-}
-
-</style>
+<body>
+
+<!-- =====================================================
+     TOP PROFILE + BALANCE
+===================================================== -->
 
 <div class="topbar">
 
-<div class="profile">
+    <div class="profile">
 
-<div class="profile-left">
+        <div class="profile-left">
 
-<img id="profileImage"
+            <img
+                id="profileImage"
+                src="uploads/default.png"
+                onerror="this.src='https://via.placeholder.com/65'"
+            >
 
-src="uploads/default.png">
+            <div>
 
-<div>
+                <h2 id="welcomeName">
+                    Welcome
+                </h2>
 
-<h2 id="welcomeName">
+                <p id="userPhone">
+                    Loading...
+                </p>
 
-Welcome
+                <p id="onlineStatus">
+                    🟢 Online
+                </p>
 
+                <p id="liveClock">
+                    Loading...
+                </p>
+
+            </div>
+
+        </div>
+
+        <button
+            class="eye-button"
+            onclick="toggleBalance()"
+        >
+            👁
+        </button>
+
+    </div>
+
+
+    <!-- =================================================
+         ONLY ONE MAIN BALANCE ID
+    ================================================= -->
+
+    <div class="balance-card main-balance-card">
+
+        <div class="balance-title">
+            Available Balance
+        </div>
+
+        <div
+            class="balance-value"
+            id="balance"
+        >
+            Loading...
+        </div>
+
+        <div class="balance-actions">
+
+            <button
+                class="deposit-btn"
+                onclick="showDeposit()"
+            >
+                Deposit
+            </button>
+
+            <button
+                class="withdraw-btn"
+                onclick="showWithdraw()"
+            >
+                Withdraw
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     QUICK ACTIONS
+===================================================== -->
+
+<h2 class="section-title">
+    Quick Actions
 </h2>
 
-<p id="userPhone">
+<div class="menu">
 
-Loading...
+    <button onclick="showDeposit()">
+        💳
+        <br>
+        Deposit
+    </button>
 
-</p> <p id="onlineStatus"></p>
+    <button onclick="showWithdraw()">
+        💸
+        <br>
+        Withdraw
+    </button>
 
-<p id="liveClock"></p>
+    <button onclick="location.href='transfer.html'">
+        🔄
+        <br>
+        Transfer
+    </button>
+
+    <button onclick="location.href='referral.html'">
+        🎁
+        <br>
+        Referral
+    </button>
+
+    <button onclick="location.href='profile.html'">
+        👤
+        <br>
+        Profile
+    </button>
+
+    <button onclick="location.href='support.html'">
+        🆘
+        <br>
+        Support
+    </button>
+
+    <button onclick="openHistory()">
+        📜
+        <br>
+        History
+    </button>
+
+    <button onclick="location.href='notification.html'">
+        🔔
+        <br>
+        Notifications
+    </button>
 
 </div>
 
-</div>
 
-<button onclick="toggleBalance()">
-
-👁
-
-</button>
-
-</div>
+<!-- =====================================================
+     WALLET STATISTICS
+===================================================== -->
 
 <div class="balance-card">
 
-<div class="balance-title">
+    <h2 style="text-align:center;">
+        Wallet Statistics
+    </h2>
 
-Available Balance
+    <br>
+
+    <div class="stats-grid">
+
+        <div class="stat-box">
+
+            <h4>
+                Total Balance
+            </h4>
+
+            <h2 id="totalBalance">
+                0 ETB
+            </h2>
+
+        </div>
+
+
+        <div class="stat-box">
+
+            <h4>
+                Referral Earnings
+            </h4>
+
+            <h2 id="referralEarnings">
+                0 ETB
+            </h2>
+
+        </div>
+
+
+        <div class="stat-box">
+
+            <h4>
+                Invited Users
+            </h4>
+
+            <h2 id="invitedUsers">
+                0
+            </h2>
+
+        </div>
+
+
+        <div class="stat-box">
+
+            <h4>
+                Notifications
+            </h4>
+
+            <h2 id="notificationCount">
+                0
+            </h2>
+
+        </div>
+
+    </div>
 
 </div>
+
+
+<!-- =====================================================
+     RECENT TRANSACTIONS
+===================================================== -->
+
+<div class="balance-card">
+
+    <h2 style="text-align:center;">
+        Recent Transactions
+    </h2>
+
+    <table class="transaction-table">
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    Type
+                </th>
+
+                <th>
+                    Amount
+                </th>
+
+                <th>
+                    Status
+                </th>
+
+            </tr>
+
+        </thead>
+
+        <tbody id="recentTransactions">
+
+            <tr>
+
+                <td
+                    colspan="3"
+                    style="padding:20px;"
+                >
+                    Loading...
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+    <br>
+
+    <div style="text-align:center;">
+
+        <button
+            class="view-button"
+            onclick="location.href='transaction-history.html'"
+        >
+            📜 View All Transactions
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     QUICK HISTORY
+===================================================== -->
+
+<div class="balance-card">
+
+    <h2 style="text-align:center;">
+        Quick History
+    </h2>
+
+    <br>
+
+    <div class="menu">
+
+        <button onclick="location.href='deposit-history.html'">
+            📥
+            <br>
+            Deposit History
+        </button>
+
+        <button onclick="location.href='withdraw-history.html'">
+            📤
+            <br>
+            Withdrawal History
+        </button>
+
+        <button onclick="location.href='transaction-history.html'">
+            📜
+            <br>
+            Transactions
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     LIVE WALLET STATISTICS
+===================================================== -->
+
+<div class="balance-card">
+
+    <h2 style="text-align:center;">
+        Live Wallet Statistics
+    </h2>
+
+    <br>
+
+    <div class="stats-grid">
+
+        <div class="stat-box">
+
+            <h4>
+                Total Deposits
+            </h4>
+
+            <h2 id="totalDeposits">
+                0 ETB
+            </h2>
+
+        </div>
+
+
+        <div class="stat-box">
+
+            <h4>
+                Total Withdrawals
+            </h4>
+
+            <h2 id="totalWithdrawals">
+                0 ETB
+            </h2>
+
+        </div>
+
+
+        <div class="stat-box">
+
+            <h4>
+                Referral Bonus
+            </h4>
+
+            <h2 id="refBonus">
+                0 ETB
+            </h2>
+
+        </div>
+
+
+        <div class="stat-box">
+
+            <h4>
+                Invited Users
+            </h4>
+
+            <h2 id="totalInvites">
+                0
+            </h2>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     HISTORY POPUP
+===================================================== -->
 
 <div
+    id="historyMenu"
+    style="
+        display:none;
+        position:fixed;
+        top:20%;
+        left:50%;
+        transform:translate(-50%,-20%);
+        background:white;
+        padding:25px;
+        border-radius:12px;
+        box-shadow:0 0 20px rgba(0,0,0,.3);
+        z-index:10000;
+        width:300px;
+        text-align:center;
+    "
+>
 
-class="balance-value"
+    <h2>
+        History
+    </h2>
 
-id="balance">
+    <br>
 
-0 ETB
+    <button onclick="location.href='deposit-history.html'">
+        📥 Deposit History
+    </button>
+
+    <br><br>
+
+    <button onclick="location.href='withdraw-history.html'">
+        📤 Withdrawal History
+    </button>
+
+    <br><br>
+
+    <button onclick="location.href='transaction-history.html'">
+        📜 Transaction History
+    </button>
+
+    <br><br>
+
+    <button onclick="closeHistory()">
+        Close
+    </button>
 
 </div>
 
-<div class="balance-actions">
+
+<!-- =====================================================
+     BOTTOM NAVIGATION
+===================================================== -->
+
+<div class="bottom-nav">
+
+    <button onclick="location.href='dashboard.html'">
+        🏠
+        <br>
+        Home
+    </button>
+
+    <button onclick="openHistory()">
+        📜
+        <br>
+        History
+    </button>
+
+    <button onclick="location.href='referral.html'">
+        🎁
+        <br>
+        Referral
+    </button>
+
+    <button onclick="location.href='profile.html'">
+        👤
+        <br>
+        Profile
+    </button>
+
+    <button
+        onclick="location.href='notification.html'"
+        style="position:relative;"
+    >
+        🔔
+        <span
+            class="notification-badge"
+            id="notificationBadge"
+        >
+            0
+        </span>
+        <br>
+        Alerts
+    </button>
+
+</div>
+
+
+<!-- =====================================================
+     DARK MODE
+===================================================== -->
 
 <button
-
-class="deposit-btn"
-
-onclick="showDeposit()">
-
-Deposit
-
+    class="dark-btn"
+    onclick="toggleDarkMode()"
+>
+    🌙
 </button>
 
-<button
 
-class="withdraw-btn"
-
-onclick="showWithdraw()">
-
-Withdraw
-
-</button>
-
-</div>
-
-</div>
-
-</div>
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
 
 <script>
 
-let balanceVisible=true;
+"use strict";
 
-function toggleBalance(){
 
-const b=document.getElementById("balance");
+/* =====================================================
+   GET LOGIN PHONE
+===================================================== */
 
-if(balanceVisible){
+function getUserPhone() {
 
-b.innerHTML="******";
+    let phone =
+        localStorage.getItem("phone") ||
+        localStorage.getItem("userPhone");
 
-balanceVisible=false;
+    if (!phone) {
 
-}else{
+        try {
 
-loadBalance();
+            const user =
+                JSON.parse(
+                    localStorage.getItem("user")
+                );
 
-balanceVisible=true;
+            if (user && user.phone) {
+                phone = user.phone;
+            }
+
+        } catch (e) {
+
+            console.log(
+                "Could not read user object."
+            );
+
+        }
+    }
+
+    if (!phone) {
+
+        console.log(
+            "❌ NO LOGIN PHONE FOUND"
+        );
+
+        return null;
+    }
+
+    return String(phone).trim();
+}
+
+
+/* =====================================================
+   SAVE PHONE CONSISTENTLY
+===================================================== */
+
+function savePhone(phone) {
+
+    if (!phone) return;
+
+    phone = String(phone).trim();
+
+    localStorage.setItem(
+        "phone",
+        phone
+    );
+
+    localStorage.setItem(
+        "userPhone",
+        phone
+    );
+
+    localStorage.setItem(
+        "user",
+        JSON.stringify({
+            phone: phone
+        })
+    );
+
+    console.log(
+        "PHONE SAVED:",
+        phone
+    );
+}
+
+
+/* =====================================================
+   UPDATE MAIN BALANCE
+===================================================== */
+
+function updateMainBalance(balance) {
+
+    const amount =
+        Number(balance || 0);
+
+    const formatted =
+        amount.toLocaleString("en-US") +
+        " ETB";
+
+
+    const balanceElement =
+        document.getElementById("balance");
+
+    if (balanceElement) {
+
+        balanceElement.textContent =
+            formatted;
+
+    }
+
+
+    const totalElement =
+        document.getElementById("totalBalance");
+
+    if (totalElement) {
+
+        totalElement.textContent =
+            formatted;
+
+    }
+
+    console.log(
+        "💰 DISPLAY BALANCE:",
+        formatted
+    );
+}
+
+
+/* =====================================================
+   LOAD PRIVATE WALLET
+   IMPORTANT:
+   USE /api/wallet/:phone
+===================================================== */
+
+async function loadWalletBalance() {
+
+    const phone =
+        getUserPhone();
+
+    console.log(
+        "================================"
+    );
+
+    console.log(
+        "LOADING PRIVATE WALLET"
+    );
+
+    console.log(
+        "PHONE:",
+        phone
+    );
+
+
+    if (!phone) {
+
+        updateMainBalance(0);
+
+        return;
+    }
+
+
+    try {
+
+        const url =
+            "/api/wallet/" +
+            encodeURIComponent(phone) +
+            "?t=" +
+            Date.now();
+
+
+        console.log(
+            "WALLET URL:",
+            url
+        );
+
+
+        const response =
+            await fetch(
+                url,
+                {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: {
+                        "Cache-Control":
+                            "no-cache",
+                        "Pragma":
+                            "no-cache"
+                    }
+                }
+            );
+
+
+        console.log(
+            "WALLET HTTP:",
+            response.status
+        );
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "WALLET RESPONSE:",
+            data
+        );
+
+
+        if (!response.ok) {
+
+            console.error(
+                "Wallet HTTP error"
+            );
+
+            return;
+        }
+
+
+        if (!data.success) {
+
+            console.error(
+                "Wallet API error:",
+                data.message
+            );
+
+            return;
+        }
+
+
+        const balance =
+            Number(data.balance || 0);
+
+
+        console.log(
+            "✅ DATABASE BALANCE:",
+            balance
+        );
+
+
+        updateMainBalance(
+            balance
+        );
+
+
+        /* Referral information */
+
+        if (
+            data.referralEarnings !==
+            undefined
+        ) {
+
+            document.getElementById(
+                "referralEarnings"
+            ).textContent =
+                Number(
+                    data.referralEarnings || 0
+                ).toLocaleString("en-US") +
+                " ETB";
+        }
+
+
+        if (data.phone) {
+
+            document.getElementById(
+                "userPhone"
+            ).textContent =
+                data.phone;
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "❌ WALLET ERROR:",
+            error
+        );
+
+    }
 
 }
 
-}
 
-async function loadProfile(){
+/* =====================================================
+   LOAD USER PROFILE
+===================================================== */
 
-const phone=localStorage.getItem("phone");
+async function loadProfile() {
 
-if(!phone)return;
+    const phone =
+        getUserPhone();
 
-try{
+    if (!phone) return;
 
-const res=await fetch("/user/"+phone);
 
-const data=await res.json();
+    try {
 
-if(data.success){
+        const response =
+            await fetch(
+                "/user/" +
+                encodeURIComponent(phone) +
+                "?t=" +
+                Date.now()
+            );
 
-document.getElementById("userPhone").innerHTML=data.user.phone;
 
-if(data.profile){
+        const data =
+            await response.json();
 
-document.getElementById("welcomeName").innerHTML=data.profile.name||"Welcome";
 
-if(data.profile.image){
+        console.log(
+            "USER RESPONSE:",
+            data
+        );
 
-document.getElementById("profileImage").src=data.profile.image;
 
-}
+        if (!data.success) {
 
-}
+            console.log(
+                "User API error:",
+                data.message
+            );
 
-}
+            return;
+        }
 
-}catch(err){
 
-console.log(err);
+        if (data.user) {
 
-}
+            if (data.user.phone) {
 
-}
+                document.getElementById(
+                    "userPhone"
+                ).textContent =
+                    data.user.phone;
 
-loadProfile();
+            }
 
-</script> <div class="quick-actions">
 
-<h2 style="margin:20px;">Quick Actions</h2>
+            if (
+                data.user.referralEarnings !==
+                undefined
+            ) {
 
-<div class="menu">
+                document.getElementById(
+                    "referralEarnings"
+                ).textContent =
+                    Number(
+                        data.user.referralEarnings || 0
+                    ).toLocaleString("en-US") +
+                    " ETB";
 
-<button onclick="showDeposit()">
-💳
-<br>
-Deposit
-</button>
+            }
 
-<button onclick="showWithdraw()">
-💸
-<br>
-Withdraw
-</button>
 
-<button onclick="location.href='transfer.html'">
-🔄
-<br>
-Transfer
-</button>
+            if (
+                data.user.invitedUsers !==
+                undefined
+            ) {
 
-<button onclick="location.href='referral.html'">
-🎁
-<br>
-Referral
-</button>
+                document.getElementById(
+                    "invitedUsers"
+                ).textContent =
+                    data.user.invitedUsers;
 
-<button onclick="location.href='profile.html'">
-👤
-<br>
-Profile
-</button>
+                document.getElementById(
+                    "totalInvites"
+                ).textContent =
+                    data.user.invitedUsers;
+            }
 
-<button onclick="location.href='support.html'">
-🆘
-<br>
-Support
-</button>
+        }
 
-<button onclick="openHistory()">
-📜
-<br>
-History
-</button>
 
-<button onclick="location.href='notification.html'">
-🔔
-<br>
-Notifications
-</button>
+        if (data.profile) {
 
-</div>
+            document.getElementById(
+                "welcomeName"
+            ).textContent =
+                data.profile.name ||
+                "Welcome";
 
-</div>
 
-<br>
+            if (data.profile.image) {
 
-<div class="balance-card">
+                document.getElementById(
+                    "profileImage"
+                ).src =
+                    data.profile.image;
 
-<h3>Wallet Statistics</h3>
+            }
 
-<br>
+        }
 
-<table style="width:100%;text-align:center;">
+    } catch (error) {
 
-<tr>
+        console.error(
+            "PROFILE ERROR:",
+            error
+        );
 
-<td>
-
-<h4>Total Balance</h4>
-
-<h2 id="totalBalance">0 ETB</h2>
-
-</td>
-
-<td>
-
-<h4>Referral Earnings</h4>
-
-<h2 id="referralEarnings">0 ETB</h2>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-
-<h4>Invited Users</h4>
-
-<h2 id="invitedUsers">0</h2>
-
-</td>
-
-<td>
-
-<h4>Notifications</h4>
-
-<h2 id="notificationCount">0</h2>
-
-</td>
-
-</tr>
-
-</table>
-
-</div>
-
-<script>
-
-async function loadDashboardStats(){
-
-const phone = localStorage.getItem("phone");
-
-if(!phone) return;
-
-try{
-
-const res = await fetch("/user/" + phone);
-
-const data = await res.json();
-
-if(data.success){
-
-document.getElementById("totalBalance").innerHTML =
-data.user.balance + " ETB";
-
-document.getElementById("referralEarnings").innerHTML =
-data.user.referralEarnings + " ETB";
-
-document.getElementById("invitedUsers").innerHTML =
-data.user.invitedUsers;
+    }
 
 }
 
-}catch(err){
 
-console.log(err);
+/* =====================================================
+   LOAD TRANSACTIONS
+===================================================== */
+
+async function loadRecentTransactions() {
+
+    const phone =
+        getUserPhone();
+
+    if (!phone) return;
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/transactions/" +
+                encodeURIComponent(phone) +
+                "?t=" +
+                Date.now()
+            );
+
+
+        const transactions =
+            await response.json();
+
+
+        const table =
+            document.getElementById(
+                "recentTransactions"
+            );
+
+
+        if (!Array.isArray(transactions)) {
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="3">
+                        No transactions found.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        table.innerHTML = "";
+
+
+        if (
+            transactions.length ===
+            0
+        ) {
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="3">
+                        No transactions found.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        transactions
+            .slice(0, 5)
+            .forEach(function(item) {
+
+                table.innerHTML += `
+                    <tr>
+                        <td>
+                            ${item.type || "Transaction"}
+                        </td>
+
+                        <td>
+                            ${Number(
+                                item.amount || 0
+                            ).toLocaleString("en-US")}
+                            ETB
+                        </td>
+
+                        <td>
+                            ${item.status || ""}
+                        </td>
+                    </tr>
+                `;
+
+            });
+
+    } catch (error) {
+
+        console.error(
+            "TRANSACTION ERROR:",
+            error
+        );
+
+    }
 
 }
 
-}
 
-loadDashboardStats();
+/* =====================================================
+   LOAD DASHBOARD STATS
+===================================================== */
 
-</script> <!-- ========================= -->
-<!-- PART 3 - RECENT TRANSACTIONS -->
-<!-- ========================= -->
+async function loadWalletStats() {
 
-<div class="balance-card">
+    const phone =
+        getUserPhone();
 
-<h2>Recent Transactions</h2>
+    if (!phone) return;
 
-<table style="width:100%;border-collapse:collapse;margin-top:15px;">
 
-<thead>
+    try {
 
-<tr style="background:#0d6efd;color:white;">
+        const response =
+            await fetch(
+                "/dashboard-stats/" +
+                encodeURIComponent(phone) +
+                "?t=" +
+                Date.now()
+            );
 
-<th style="padding:10px;">Type</th>
 
-<th style="padding:10px;">Amount</th>
+        const data =
+            await response.json();
 
-<th style="padding:10px;">Status</th>
 
-</tr>
+        console.log(
+            "DASHBOARD STATS:",
+            data
+        );
 
-</thead>
 
-<tbody id="recentTransactions">
+        if (!data.success) return;
 
-<tr>
 
-<td colspan="3" style="padding:20px;text-align:center;">
+        document.getElementById(
+            "totalDeposits"
+        ).textContent =
+            Number(
+                data.totalDeposits || 0
+            ).toLocaleString("en-US") +
+            " ETB";
 
-Loading...
 
-</td>
+        document.getElementById(
+            "totalWithdrawals"
+        ).textContent =
+            Number(
+                data.totalWithdrawals || 0
+            ).toLocaleString("en-US") +
+            " ETB";
 
-</tr>
 
-</tbody>
+        document.getElementById(
+            "refBonus"
+        ).textContent =
+            Number(
+                data.referralBonus || 0
+            ).toLocaleString("en-US") +
+            " ETB";
 
-</table>
 
-<br>
+        document.getElementById(
+            "totalInvites"
+        ).textContent =
+            data.invitedUsers || 0;
 
-<div style="text-align:center;">
+    } catch (error) {
 
-<button onclick="location.href='transaction-history.html'">
+        console.error(
+            "STATS ERROR:",
+            error
+        );
 
-📜 View All Transactions
-
-</button>
-
-</div>
-
-</div>
-
-<br>
-
-<div class="balance-card">
-
-<h2>Quick History</h2>
-
-<div class="menu">
-
-<button onclick="location.href='deposit-history.html'">
-
-📥
-
-<br>
-
-Deposit History
-
-</button>
-
-<button onclick="location.href='withdraw-history.html'">
-
-📤
-
-<br>
-
-Withdrawal History
-
-</button>
-
-<button onclick="location.href='transaction-history.html'">
-
-📜
-
-<br>
-
-Transactions
-
-</button>
-
-</div>
-
-</div>
-
-<script>
-
-async function loadRecentTransactions(){
-
-const phone = localStorage.getItem("phone");
-
-if(!phone) return;
-
-try{
-
-const res = await fetch("/transactions/" + phone);
-
-const transactions = await res.json();
-
-const table = document.getElementById("recentTransactions");
-
-table.innerHTML = "";
-
-if(transactions.length===0){
-
-table.innerHTML = `
-
-<tr>
-
-<td colspan="3">
-
-No transactions found.
-
-</td>
-
-</tr>
-
-`;
-
-return;
+    }
 
 }
 
-transactions.slice(0,5).forEach(item=>{
 
-table.innerHTML += `
+/* =====================================================
+   NOTIFICATIONS
+===================================================== */
 
-<tr>
+async function loadNotificationCount() {
 
-<td style="padding:10px;">${item.type}</td>
+    const phone =
+        getUserPhone();
 
-<td style="padding:10px;">${item.amount} ETB</td>
+    if (!phone) return;
 
-<td style="padding:10px;">${item.status}</td>
 
-</tr>
+    try {
 
-`;
+        const response =
+            await fetch(
+                "/notifications/" +
+                encodeURIComponent(phone) +
+                "?t=" +
+                Date.now()
+            );
 
-});
 
-}catch(err){
+        const data =
+            await response.json();
 
-console.log(err);
 
-}
+        if (Array.isArray(data)) {
 
-}
+            document.getElementById(
+                "notificationBadge"
+            ).textContent =
+                data.length;
 
-loadRecentTransactions();
+            document.getElementById(
+                "notificationCount"
+            ).textContent =
+                data.length;
+        }
 
-</script>
+    } catch (error) {
 
-<div class="header">
+        console.error(
+            "NOTIFICATION ERROR:",
+            error
+        );
 
-Wallet Dashboard
-
-</div>
-
-<div class="balance-card">
-
-<h2>Current Balance</h2>
-
-<div class="balance" id="balance">
-
-0 ETB
-
-</div>
-
-</div>
-
-<div class="menu">
-
-<button onclick="showDeposit()">
-💳
-<br>
-Deposit
-</button>
-
-<button onclick="location.href='withdraw.html'">
-💸
-<br>
-Withdraw
-</button>
-
-<button onclick="location.href='transfer.html'">
-🔄
-<br>
-Transfer
-</button>
-
-<button onclick="location.href='referral.html'">
-🎁
-<br>
-Referral
-</button>
-
-<button onclick="location.href='profile.html'">
-👤
-<br>
-Profile
-</button>
-
-<button onclick="location.href='support.html'">
-🆘
-<br>
-Support
-</button>
-
-<button onclick="openHistory()">
-📜
-<br>
-History
-</button>
-
-<button onclick="location.href='notification.html'">
-🔔
-<br>
-Notifications
-</button>
-
-<button onclick="logout()">
-🚪
-<br>
-Logout
-</button>
-</div>
-
-<div id="historyMenu" style="display:none;
-position:fixed;
-top:20%;
-left:50%;
-transform:translate(-50%,-20%);
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 0 20px rgba(0,0,0,.3);
-z-index:999;
-width:300px;
-text-align:center;">
-
-<h2>History</h2>
-
-<br>
-
-<button onclick="location.href='deposit-history.html'">
-
-📥 Deposit History
-
-</button>
-
-<br><br>
-
-<button onclick="location.href='withdraw-history.html'">
-
-📤 Withdrawal History
-
-</button>
-
-<br><br>
-
-<button onclick="location.href='transaction-history.html'">
-
-📜 Transaction History
-
-</button>
-
-<br><br>
-
-<button onclick="closeHistory()">
-
-Close
-
-</button>
-
-</div>
-
-<script>
-
-function openHistory(){
-
-document.getElementById("historyMenu").style.display="block";
+    }
 
 }
 
-function closeHistory(){
 
-document.getElementById("historyMenu").style.display="none";
+/* =====================================================
+   LOAD EVERYTHING
+===================================================== */
+
+async function loadDashboard() {
+
+    console.log(
+        "🚀 LOADING DASHBOARD"
+    );
+
+    await loadWalletBalance();
+
+    await loadProfile();
+
+    await loadRecentTransactions();
+
+    await loadWalletStats();
+
+    await loadNotificationCount();
 
 }
 
-function showDeposit(){
 
-const proceed=confirm(`DEPOSIT
+/* =====================================================
+   DEPOSIT
+===================================================== */
+
+function showDeposit() {
+
+    const proceed =
+        confirm(
+`DEPOSIT
 
 Dear Customer,
 
@@ -848,659 +1507,367 @@ Minimum Deposit : 5,000 ETB
 
 Maximum Deposit : 300,000 ETB
 
-Deposit to the following Telebirr Number:
+Deposit to Telebirr:
 
 0904489434
 
-After depositing,
-
-Please upload your payment screenshot.
+After depositing, please submit your deposit and TXID.
 
 Your deposit will be reviewed by the administrator.
 
-Thank you for using our service.
+Press OK to continue.`
+        );
 
-Press OK to continue.`);
 
-if(proceed){
+    if (proceed) {
 
-location.href="deposit.html";
+        location.href =
+            "deposit.html";
+
+    }
 
 }
 
-}
 
-function showWithdraw(){
+/* =====================================================
+   WITHDRAW
+===================================================== */
 
-const proceed=confirm(`WITHDRAW
+function showWithdraw() {
+
+    const proceed =
+        confirm(
+`WITHDRAW
 
 Minimum Withdrawal : 10,000 ETB
 
 Maximum Withdrawal : 400,000 ETB
 
-Withdrawals are sent only to your registered Telebirr account.
+Withdrawals are sent to your registered Telebirr account.
 
-After submitting your request, the administrator will review it before payment.
+The administrator will review the request.
 
-Press OK to continue.`);
+Press OK to continue.`
+        );
 
-if(proceed){
 
-location.href="withdraw.html";
+    if (proceed) {
 
-}
+        location.href =
+            "withdraw.html";
 
-}
-
-function logout(){
-
-localStorage.removeItem("phone");
-
-localStorage.removeItem("user");
-
-location.href="index.html";
+    }
 
 }
 
-async function loadBalance(){
 
-const phone=localStorage.getItem("phone");
+/* =====================================================
+   HISTORY
+===================================================== */
 
-if(!phone) return;
+function openHistory() {
 
-try{
-
-const res=await fetch("/user/"+phone);
-
-const data=await res.json();
-
-if(data.success){
-
-document.getElementById("balance").innerHTML=data.user.balance+" ETB";
+    document.getElementById(
+        "historyMenu"
+    ).style.display =
+        "block";
 
 }
 
-}catch(e){
 
-console.log(e);
+function closeHistory() {
 
-}
-
-}
-
-loadBalance();
-
-</script> <!-- ========================= -->
-<!-- PART 4 - BOTTOM NAVIGATION -->
-<!-- ========================= -->
-
-<style>
-
-.bottom-nav{
-
-position:fixed;
-
-bottom:0;
-
-left:0;
-
-width:100%;
-
-height:70px;
-
-background:white;
-
-display:flex;
-
-justify-content:space-around;
-
-align-items:center;
-
-box-shadow:0 -2px 10px rgba(0,0,0,.2);
-
-z-index:9999;
+    document.getElementById(
+        "historyMenu"
+    ).style.display =
+        "none";
 
 }
 
-.bottom-nav button{
 
-background:none;
+/* =====================================================
+   BALANCE SHOW/HIDE
+===================================================== */
 
-border:none;
+let balanceVisible = true;
 
-font-size:14px;
 
-cursor:pointer;
+function toggleBalance() {
 
-font-weight:bold;
+    const element =
+        document.getElementById(
+            "balance"
+        );
 
-color:#555;
 
-}
+    if (!element) return;
 
-.bottom-nav button:hover{
 
-color:#0d6efd;
+    if (balanceVisible) {
 
-}
+        element.textContent =
+            "******";
 
-.notification-badge{
+        balanceVisible = false;
 
-position:absolute;
+    } else {
 
-margin-top:-8px;
+        loadWalletBalance();
 
-margin-left:18px;
+        balanceVisible = true;
 
-background:red;
-
-color:white;
-
-border-radius:50%;
-
-padding:2px 7px;
-
-font-size:12px;
-
-font-weight:bold;
+    }
 
 }
 
-.dark-btn{
 
-position:fixed;
+/* =====================================================
+   DARK MODE
+===================================================== */
 
-right:20px;
+function toggleDarkMode() {
 
-bottom:90px;
+    document.body.classList.toggle(
+        "dark"
+    );
 
-background:#0d6efd;
 
-color:white;
-
-border:none;
-
-padding:12px;
-
-border-radius:50%;
-
-cursor:pointer;
-
-font-size:18px;
-
-box-shadow:0 2px 8px rgba(0,0,0,.3);
+    localStorage.setItem(
+        "darkMode",
+        document.body.classList.contains(
+            "dark"
+        )
+    );
 
 }
 
-.dark{
 
-background:#1d1d1d;
+if (
+    localStorage.getItem(
+        "darkMode"
+    ) === "true"
+) {
 
-color:white;
-
-}
-
-.dark .balance-card{
-
-background:#2d2d2d;
-
-color:white;
+    document.body.classList.add(
+        "dark"
+    );
 
 }
 
-.dark table{
 
-color:white;
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+function logout() {
+
+    localStorage.removeItem(
+        "phone"
+    );
+
+    localStorage.removeItem(
+        "userPhone"
+    );
+
+    localStorage.removeItem(
+        "user"
+    );
+
+    localStorage.removeItem(
+        "userId"
+    );
+
+    location.href =
+        "index.html";
 
 }
 
-</style>
 
-<div class="bottom-nav">
+/* =====================================================
+   CLOCK
+===================================================== */
 
-<button onclick="location.href='dashboard.html'">
+function updateClock() {
 
-🏠
+    const clock =
+        document.getElementById(
+            "liveClock"
+        );
 
-<br>
 
-Home
+    if (!clock) return;
 
-</button>
 
-<button onclick="openHistory()">
+    const now =
+        new Date();
 
-📜
 
-<br>
+    const options = {
 
-History
+        weekday: "long",
 
-</button>
+        year: "numeric",
 
-<button onclick="location.href='referral.html'">
+        month: "long",
 
-🎁
+        day: "numeric",
 
-<br>
+        hour: "2-digit",
 
-Referral
+        minute: "2-digit",
 
-</button>
+        second: "2-digit"
 
-<button onclick="location.href='profile.html'">
+    };
 
-👤
 
-<br>
+    clock.textContent =
+        now.toLocaleString(
+            undefined,
+            options
+        );
 
-Profile
+}
 
-</button>
 
-<button onclick="location.href='notification.html'" style="position:relative;">
-
-🔔
-
-<span
-
-class="notification-badge"
-
-id="notificationBadge">
-
-0
-
-</span>
-
-<br>
-
-Alerts
-
-</button>
-
-</div>
-
-<button
-
-class="dark-btn"
-
-onclick="toggleDarkMode()">
-
-🌙
-
-</button>
-
-<script>
-
-function toggleDarkMode(){
-
-document.body.classList.toggle("dark");
-
-localStorage.setItem(
-
-"darkMode",
-
-document.body.classList.contains("dark")
-
+setInterval(
+    updateClock,
+    1000
 );
-
-}
-
-if(localStorage.getItem("darkMode")=="true"){
-
-document.body.classList.add("dark");
-
-}
-
-async function loadNotificationCount(){
-
-const phone=localStorage.getItem("phone");
-
-if(!phone) return;
-
-try{
-
-const res=await fetch("/notifications/"+phone);
-
-const data=await res.json();
-
-document.getElementById("notificationBadge").innerHTML=data.length;
-
-}catch(err){
-
-console.log(err);
-
-}
-
-}
-
-loadNotificationCount();
-
-setInterval(loadNotificationCount,5000);
-
-</script> <!-- ========================= -->
-<!-- PART 5 - LIVE WALLET STATS -->
-<!-- ========================= -->
-
-<div class="balance-card">
-
-<h2 style="text-align:center;">Live Wallet Statistics</h2>
-
-<br>
-
-<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:15px;">
-
-<div style="background:#f8f9fa;padding:15px;border-radius:10px;text-align:center;">
-
-<h4>Total Deposits</h4>
-
-<h2 id="totalDeposits">0 ETB</h2>
-
-</div>
-
-<div style="background:#f8f9fa;padding:15px;border-radius:10px;text-align:center;">
-
-<h4>Total Withdrawals</h4>
-
-<h2 id="totalWithdrawals">0 ETB</h2>
-
-</div>
-
-<div style="background:#f8f9fa;padding:15px;border-radius:10px;text-align:center;">
-
-<h4>Referral Bonus</h4>
-
-<h2 id="refBonus">0 ETB</h2>
-
-</div>
-
-<div style="background:#f8f9fa;padding:15px;border-radius:10px;text-align:center;">
-
-<h4>Invited Users</h4>
-
-<h2 id="totalInvites">0</h2>
-
-</div>
-
-</div>
-
-</div>
-
-<script>
-
-async function loadWalletStats(){
-
-const phone=localStorage.getItem("phone");
-
-if(!phone) return;
-
-try{
-
-const res=await fetch("/dashboard-stats/"+phone);
-
-const data=await res.json();
-
-if(data.success){
-
-document.getElementById("totalDeposits").innerHTML=data.totalDeposits+" ETB";
-
-document.getElementById("totalWithdrawals").innerHTML=data.totalWithdrawals+" ETB";
-
-document.getElementById("refBonus").innerHTML=data.referralBonus+" ETB";
-
-document.getElementById("totalInvites").innerHTML=data.invitedUsers;
-
-}
-
-}catch(err){
-
-console.log(err);
-
-}
-
-}
-
-loadWalletStats();
-
-setInterval(loadWalletStats,5000);
-
-</script>
-<!-- ========================= -->
-<!-- PART 6 - FOOTER -->
-<!-- ========================= -->
-
-<div style="height:100px;"></div>
-
-<footer style="background:#0d6efd;color:white;padding:20px;text-align:center;margin-top:30px;">
-
-<h3>My Wallet</h3>
-
-<p>
-
-Fast • Secure • Reliable
-
-</p>
-
-<p>
-
-Deposit | Withdraw | Transfer | Referral | Support
-
-</p>
-
-<p>
-
-© 2026 My Wallet. All Rights Reserved.
-
-</p>
-
-</footer>
-
-<script>
-
-// =========================
-// LIVE CLOCK
-// =========================
-
-function updateClock(){
-
-const now=new Date();
-
-const options={
-
-weekday:"long",
-
-year:"numeric",
-
-month:"long",
-
-day:"numeric",
-
-hour:"2-digit",
-
-minute:"2-digit",
-
-second:"2-digit"
-
-};
-
-const clock=document.getElementById("liveClock");
-
-if(clock){
-
-clock.innerHTML=now.toLocaleString(undefined,options);
-
-}
-
-}
-
-setInterval(updateClock,1000);
 
 updateClock();
 
 
-// =========================
-// ONLINE STATUS
-// =========================
+/* =====================================================
+   ONLINE STATUS
+===================================================== */
 
-function updateOnlineStatus(){
+function updateOnlineStatus() {
 
-const status=document.getElementById("onlineStatus");
+    const status =
+        document.getElementById(
+            "onlineStatus"
+        );
 
-if(!status) return;
 
-if(navigator.onLine){
+    if (!status) return;
 
-status.innerHTML="🟢 Online";
 
-status.style.color="green";
+    if (navigator.onLine) {
 
-}else{
+        status.textContent =
+            "🟢 Online";
 
-status.innerHTML="🔴 Offline";
+    } else {
 
-status.style.color="red";
+        status.textContent =
+            "🔴 Offline";
+
+    }
 
 }
 
-}
 
-window.addEventListener("online",updateOnlineStatus);
+window.addEventListener(
+    "online",
+    updateOnlineStatus
+);
 
-window.addEventListener("offline",updateOnlineStatus);
+window.addEventListener(
+    "offline",
+    updateOnlineStatus
+);
 
 updateOnlineStatus();
 
 
-// =========================
-// PAGE ANIMATION
-// =========================
+/* =====================================================
+   PAGE START
+===================================================== */
 
-document.body.style.opacity="0";
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
 
-window.onload=function(){
+        console.log(
+            "✅ DASHBOARD LOADED"
+        );
 
-document.body.style.transition="opacity .5s";
 
-document.body.style.opacity="1";
+        const phone =
+            getUserPhone();
 
-};
 
-</script>
-<hr style="margin:30px 0;">
+        console.log(
+            "LOGIN PHONE:",
+            phone
+        );
 
-<div style="width:95%;max-width:900px;margin:auto;">
 
-<h2 style="text-align:center;margin-bottom:20px;">
-Quick Information
-</h2>
+        if (phone) {
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;">
+            savePhone(phone);
 
-<div style="background:white;padding:20px;border-radius:10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.2);">
+        }
 
-<h3>Total Balance</h3>
 
-<h2 id="totalBalance">
-0 ETB
-</h2>
+        loadDashboard();
 
-</div>
+    }
+);
 
-<div style="background:white;padding:20px;border-radius:10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.2);">
 
-<h3>Referral Earnings</h3>
+/* =====================================================
+   REFRESH WHEN RETURNING
+===================================================== */
 
-<h2 id="referralEarnings">
-0 ETB
-</h2>
+window.addEventListener(
+    "pageshow",
+    function() {
 
-</div>
+        loadWalletBalance();
 
-<div style="background:white;padding:20px;border-radius:10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.2);">
+    }
+);
 
-<h3>Invited Users</h3>
 
-<h2 id="invitedUsers">
-0
-</h2>
+/* =====================================================
+   REFRESH WHEN TAB BECOMES VISIBLE
+===================================================== */
 
-</div>
+document.addEventListener(
+    "visibilitychange",
+    function() {
 
-<div style="background:white;padding:20px;border-radius:10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.2);">
+        if (
+            document.visibilityState ===
+            "visible"
+        ) {
 
-<h3>Notifications</h3>
+            loadDashboard();
 
-<h2>
+        }
 
-<a href="notification.html">
+    }
+);
 
-View
 
-</a>
+/* =====================================================
+   AUTO REFRESH
+===================================================== */
 
-</h2>
+setInterval(
+    function() {
 
-</div>
+        loadWalletBalance();
 
-</div>
+        loadNotificationCount();
 
-</div>
-
-<footer style="margin-top:40px;background:#0d6efd;color:white;padding:20px;text-align:center;">
-
-<h3>My Wallet System</h3>
-
-<p>
-
-Secure Deposit • Secure Withdrawal • Referral Rewards • Transfer • Support
-
-</p>
-
-<p>
-
-© 2026 All Rights Reserved
-
-</p>
-
-</footer>
-
-<script>
-
-async function loadUserInfo(){
-
-const phone=localStorage.getItem("phone");
-
-if(!phone) return;
-
-try{
-
-const res=await fetch("/user/"+phone);
-
-const data=await res.json();
-
-if(data.success){
-
-document.getElementById("totalBalance").innerHTML=data.user.balance+" ETB";
-
-document.getElementById("referralEarnings").innerHTML=data.user.referralEarnings+" ETB";
-
-document.getElementById("invitedUsers").innerHTML=data.user.invitedUsers;
-
-}
-
-}catch(err){
-
-console.log(err);
-
-}
-
-}
-
-loadUserInfo();
+    },
+    5000
+);
 
 </script>
 
 </body>
-
 </html>
-
