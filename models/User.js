@@ -1,93 +1,68 @@
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema({
-
-    // ======================================
-    // USER PHONE
-    // ======================================
+const UserSchema = new mongoose.Schema({
 
     phone: {
         type: String,
         required: true,
-        unique: true,
-        trim: true
+        unique: true
     },
 
+    name: {
+        type: String,
+        default: "New User"
+    },
 
-    // ======================================
-    // PRIVATE WALLET BALANCE
-    // ======================================
+    // ==============================
+    // WALLET BALANCE
+    // ==============================
 
     balance: {
         type: Number,
         default: 0
     },
 
-
-    // ======================================
-    // USER STATUS
-    // ======================================
-
-    blocked: {
-        type: Boolean,
-        default: false
-    },
-
-
-    // ======================================
-    // USER'S OWN REFERRAL CODE
-    // ======================================
+    // ==============================
+    // REFERRAL
+    // ==============================
 
     referralCode: {
         type: String,
         unique: true,
-        sparse: true
+        required: true
     },
-
-
-    // ======================================
-    // REFERRAL CODE USED BY THIS USER
-    // ======================================
 
     referredBy: {
         type: String,
         default: ""
     },
 
-
-    // ======================================
-    // TOTAL REFERRAL EARNINGS
-    // ======================================
-
     referralEarnings: {
         type: Number,
         default: 0
     },
-
-
-    // ======================================
-    // NUMBER OF INVITED USERS
-    // ======================================
 
     invitedUsers: {
         type: Number,
         default: 0
     },
 
-
-    // ======================================
-    // REFERRAL BONUS PAID
-    // ======================================
-
+    // TRUE after the user's first
+    // approved deposit bonus is paid
     referralPaid: {
         type: Boolean,
         default: false
     },
 
+    totalEarnings: {
+        type: Number,
+        default: 0
+    },
 
-    // ======================================
-    // ACCOUNT CREATED DATE
-    // ======================================
+    status: {
+        type: String,
+        default: "Active"
+    },
 
     createdAt: {
         type: Date,
@@ -96,10 +71,5 @@ const userSchema = new mongoose.Schema({
 
 });
 
-
-// ======================================
-// EXPORT USER MODEL
-// ======================================
-
 module.exports =
-    mongoose.model("User", userSchema);
+    mongoose.model("User", UserSchema);

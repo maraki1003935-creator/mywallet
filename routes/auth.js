@@ -3,6 +3,12 @@ const router = express.Router();
 
 const User = require("../models/User");
 const LoginActivity = require("../models/LoginActivity");
+const Deposit = require("../models/Deposit");
+
+
+// ======================================================
+// GENERATE UNIQUE REFERRAL CODE
+// ======================================================
 
 function generateReferralCode() {
 
@@ -13,125 +19,346 @@ function generateReferralCode() {
 
 }
 
+
+// ======================================================
+// LOGIN / CREATE USER
+// ======================================================
+
 router.post("/login", async (req, res) => {
 
     try {
 
-        const { phone, referralCode } = req.body;
+        const phone =
+            req.body.phone
+                ? String(req.body.phone).trim()
+                : "";
+
+        const referralCode =
+            req.body.referralCode
+                ? String(req.body.referralCode)
+                    .trim()
+                    .toUpperCase()
+                : "";
+
+
+        // ==================================================
+        // CHECK PHONE
+        // ==================================================
 
         if (!phone) {
 
-            return res.json({
+            return res.status(400).json({
 
                 success: false,
 
-                message: "Phone number is required."
+                message:
+                    "Phone number is required."
 
             });
 
         }
 
-        let user = await User.findOne({
 
-            phone
+        // ==================================================
+        // FIND EXISTING USER
+        // ==================================================
 
-        });
+        let user =
+            await User.findOne({
+                phone: phone
+            });
+
+
+        // ==================================================
+        // CREATE NEW USER
+        // ==================================================
 
         if (!user) {
 
-            let myReferralCode = generateReferralCode();
+            let myReferralCode =
+                generateReferralCode();
 
-            while (await User.findOne({ referralCode: myReferralCode })) {
 
-                myReferralCode = generateReferralCode();
+            // Make sure referral code is unique
+
+            while (
+                await User.findOne({
+                    referralCode:
+                        myReferralCode
+                })
+            ) {
+
+                myReferralCode =
+                    generateReferralCode();
 
             }
 
+
+            // ==================================================
+            // VERIFY REFERRAL CODE
+            // ==================================================
+
+            let validReferralCode = "";
+
+            if (referralCode) {
+
+                const referrer =
+                    await User.findOne({
+                        referralCode:
+                            referralCode
+                    });
+
+
+                if (referrer) {
+
+                    validReferralCode =
+                        referrer.referralCode;
+
+                    console.log(
+                        "VALID REFERRER FOUND:",
+                        referrer.phone
+                    );
+
+                } else {
+
+                    console.log(
+                        "INVALID REFERRAL CODE:",
+                        referralCode
+                    );
+
+                }
+
+            }
+
+
+            // ==================================================
+            // CREATE USER
+            // ==================================================
+
             user = new User({
 
-                phone,
+                phone: phone,
 
                 balance: 0,
 
-                referralCode: myReferralCode,
+                referralCode:
+                    myReferralCode,
 
-                referredBy: referralCode || ""
+                referredBy:
+                    validReferralCode,
+
+                referralEarnings: 0,
+
+                invitedUsers: 0,
+
+                referralPaid: false,
+
+                totalEarnings: 0,
+
+                status: "Active"
 
             });
 
+
             await user.save();
 
-        } const activity = new LoginActivity({
 
-    phone: user.phone,
+            console.log(
+                "================================"
+            );
 
-    ip: req.ip,
+            console.log(
+                "NEW USER CREATED"
+            );
 
-    browser: req.headers["user-agent"],
+            console.log(
+                "PHONE:",
+                user.phone
+            );
 
-    status: "Success"
+            console.log(
+                "OWN REFERRAL CODE:",
+                user.referralCode
+            );
 
-});
+            console.log(
+                "REFERRED BY:",
+                user.referredBy
+            );
 
-await activity.save();
+            console.log(
+                "================================"
+            );
+
+        } else {
+
+            console.log(
+                "EXISTING USER LOGIN:",
+                user.phone
+            );
+
+        }
+
+
+        // ==================================================
+        // LOGIN ACTIVITY
+        // ==================================================
+
+        const activity =
+            new LoginActivity({
+
+                phone: user.phone,
+
+                ip: req.ip,
+
+                browser:
+                    req.headers["user-agent"],
+
+                status: "Success"
+
+            });
+
+
+        await activity.save();
+
+
+        // ==================================================
+        // SEND USER TO FRONTEND
+        // ==================================================
 
         res.json({
 
             success: true,
 
-            user
+            message:
+                "Login successful.",
+
+            user: {
+
+                _id: user._id,
+
+                phone: user.phone,
+
+                name: user.name,
+
+                balance:
+                    Number(user.balance || 0),
+
+                referralCode:
+                    user.referralCode,
+
+                referredBy:
+                    user.referredBy,
+
+                referralEarnings:
+                    Number(
+                        user.referralEarnings || 0
+                    ),
+
+                invitedUsers:
+                    Number(
+                        user.invitedUsers || 0
+                    ),
+
+                referralPaid:
+                    Boolean(
+                        user.referralPaid
+                    ),
+
+                totalEarnings:
+                    Number(
+                        user.totalEarnings || 0
+                    ),
+
+                status:
+                    user.status
+
+            }
 
         });
+
 
     } catch (err) {
 
-        console.log(err);
+        console.error(
+            "LOGIN ERROR:",
+            err
+        );
 
-        res.json({
-
-            success: false,
-
-            message: err.message
-
-        });
-
-    }
-
-});
-// ======================================
-// DEPOSIT HISTORY
-// ======================================
-
-router.get("/deposit-history/:phone", async (req, res) => {
-
-    try {
-
-        const deposits = await Deposit.find({
-
-            phone: req.params.phone
-
-        }).sort({
-
-            createdAt: -1
-
-        });
-
-        res.json(deposits);
-
-    } catch (err) {
-
-        console.log(err);
 
         res.status(500).json({
 
             success: false,
 
-            message: err.message
+            message:
+                err.message ||
+                "Server error."
 
         });
 
     }
 
 });
+
+
+// ======================================================
+// DEPOSIT HISTORY
+// ======================================================
+
+router.get(
+    "/deposit-history/:phone",
+    async (req, res) => {
+
+        try {
+
+            const phone =
+                String(
+                    req.params.phone
+                ).trim();
+
+
+            const deposits =
+                await Deposit.find({
+
+                    phone: phone
+
+                }).sort({
+
+                    createdAt: -1
+
+                });
+
+
+            res.json({
+
+                success: true,
+
+                deposits: deposits
+
+            });
+
+
+        } catch (err) {
+
+            console.error(
+                "DEPOSIT HISTORY ERROR:",
+                err
+            );
+
+
+            res.status(500).json({
+
+                success: false,
+
+                message:
+                    err.message
+
+            });
+
+        }
+
+    }
+);
+
 
 module.exports = router;
