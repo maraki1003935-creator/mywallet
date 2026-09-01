@@ -975,10 +975,15 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
         user.balance = oldBalance + amount;
 
         // ======================================
-// NEW USER 600 ETB DEPOSIT BONUS
+// NEW USER + REFERRER BONUS
 // ======================================
 
 let bonus = 0;
+let referralBonus = 0;
+
+// --------------------------------------
+// NEW USER GETS 600 ETB
+// --------------------------------------
 
 if (!user.referralPaid) {
 
@@ -990,20 +995,18 @@ if (!user.referralPaid) {
     user.referralPaid = true;
 
     console.log(
-        "NEW USER BONUS: +600 ETB",
+        "NEW USER BONUS +600:",
         user.phone
     );
 }
 
 
-// ======================================
-// REFERRER 600 ETB BONUS
-// ======================================
-
-let referralBonus = 0;
-let referrer = null;
+// --------------------------------------
+// REFERRER GETS 600 ETB
+// --------------------------------------
 
 if (
+    bonus === 600 &&
     user.referredBy &&
     String(user.referredBy).trim() !== ""
 ) {
@@ -1011,118 +1014,93 @@ if (
     const referralCode =
         String(user.referredBy).trim();
 
-
     console.log(
-        "FINDING REFERRER:",
+        "REFERRAL CODE:",
         referralCode
     );
 
 
-    referrer = await User.findOne({
-        referralCode: referralCode
-    });
+    const referrer =
+        await User.findOne({
+            referralCode: referralCode
+        });
 
 
     if (referrer) {
 
-        /*
-         * IMPORTANT:
-         *
-         * bonus === 600 means this is the
-         * new user's first qualifying deposit.
-         *
-         * Therefore the referrer gets 600 ETB.
-         *
-         * The referrer's referralPaid field
-         * is NOT checked here.
-         *
-         * This allows the same referrer to earn
-         * 600 ETB from many different users.
-         */
-
-        if (bonus === 600) {
-
-            referralBonus = 600;
+        referralBonus = 600;
 
 
-            // Add money to referrer's PRIVATE wallet
+        // Add 600 to referrer's wallet
 
-            referrer.balance =
-                Number(referrer.balance || 0) +
-                600;
-
-
-            // Add to referral earnings
-
-            referrer.referralEarnings =
-                Number(
-                    referrer.referralEarnings || 0
-                ) + 600;
+        referrer.balance =
+            Number(referrer.balance || 0) + 600;
 
 
-            // Count this invited user
+        // Add referral earnings
 
-            referrer.invitedUsers =
-                Number(
-                    referrer.invitedUsers || 0
-                ) + 1;
+        referrer.referralEarnings =
+            Number(referrer.referralEarnings || 0) + 600;
 
 
-            await referrer.save();
+        // Count invited user
+
+        referrer.invitedUsers =
+            Number(referrer.invitedUsers || 0) + 1;
 
 
-            console.log(
-                "REFERRER BONUS ADDED:",
-                referrer.phone,
-                "+600 ETB"
-            );
+        await referrer.save();
 
 
-            console.log(
-                "REFERRER NEW BALANCE:",
-                referrer.balance
-            );
+        console.log(
+            "REFERRER BONUS +600:",
+            referrer.phone
+        );
 
 
-            // ======================================
-            // REFERRER TRANSACTION
-            // ======================================
-
-            await Transaction.create({
-
-                phone: referrer.phone,
-
-                type: "Referral Bonus",
-
-                amount: 600,
-
-                status: "Approved",
-
-                reference:
-                    "REF-" +
-                    user._id +
-                    "-" +
-                    deposit._id
-
-            });
+        console.log(
+            "REFERRER NEW BALANCE:",
+            referrer.balance
+        );
 
 
-            // ======================================
-            // REFERRER NOTIFICATION
-            // ======================================
+        // --------------------------------------
+        // REFERRER TRANSACTION
+        // --------------------------------------
 
-            await Notification.create({
+        await Transaction.create({
 
-                phone: referrer.phone,
+            phone: referrer.phone,
 
-                title: "Referral Bonus",
+            type: "Referral Bonus",
 
-                message:
-                    "You received 600 ETB referral bonus because your invited user made their first qualifying deposit."
+            amount: 600,
 
-            });
+            status: "Approved",
 
-        }
+            reference:
+                "REF-" +
+                user._id +
+                "-" +
+                deposit._id
+
+        });
+
+
+        // --------------------------------------
+        // REFERRER NOTIFICATION
+        // --------------------------------------
+
+        await Notification.create({
+
+            phone: referrer.phone,
+
+            title: "Referral Bonus",
+
+            message:
+                "You received 600 ETB referral bonus because your invited user made their first deposit."
+
+        });
 
     } else {
 
@@ -1132,9 +1110,7 @@ if (
         );
 
     }
-
 }
-
 
 // ======================================
 // SAVE NEW USER
