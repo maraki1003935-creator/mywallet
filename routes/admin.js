@@ -975,24 +975,29 @@ router.post("/deposit/approve/:id", verifyAdmin, async (req, res) => {
         user.balance = oldBalance + amount;
 
         // ======================================
-// NEW USER DEPOSIT BONUS
+// NEW USER 600 ETB DEPOSIT BONUS
 // ======================================
 
-let depositBonus = 0;
+let bonus = 0;
 
 if (!user.referralPaid) {
 
-    depositBonus = 600;
+    bonus = 600;
 
     user.balance =
-        Number(user.balance || 0) + depositBonus;
+        Number(user.balance || 0) + 600;
 
     user.referralPaid = true;
+
+    console.log(
+        "NEW USER BONUS: +600 ETB",
+        user.phone
+    );
 }
 
 
 // ======================================
-// REFERRER BONUS
+// REFERRER 600 ETB BONUS
 // ======================================
 
 let referralBonus = 0;
@@ -1003,39 +1008,80 @@ if (
     String(user.referredBy).trim() !== ""
 ) {
 
-    // Find the person who invited this user
+    const referralCode =
+        String(user.referredBy).trim();
+
+
+    console.log(
+        "FINDING REFERRER:",
+        referralCode
+    );
+
+
     referrer = await User.findOne({
-        referralCode: String(user.referredBy).trim()
+        referralCode: referralCode
     });
 
 
     if (referrer) {
 
         /*
-         * Give the referrer 600 ETB only once
-         * for this referred user.
+         * IMPORTANT:
          *
-         * We use the new user's referralPaid
-         * to make sure the qualifying deposit
-         * happens only once.
+         * bonus === 600 means this is the
+         * new user's first qualifying deposit.
+         *
+         * Therefore the referrer gets 600 ETB.
+         *
+         * The referrer's referralPaid field
+         * is NOT checked here.
+         *
+         * This allows the same referrer to earn
+         * 600 ETB from many different users.
          */
 
-        if (depositBonus === 600) {
+        if (bonus === 600) {
 
             referralBonus = 600;
 
+
+            // Add money to referrer's PRIVATE wallet
+
             referrer.balance =
                 Number(referrer.balance || 0) +
-                referralBonus;
+                600;
+
+
+            // Add to referral earnings
 
             referrer.referralEarnings =
-                Number(referrer.referralEarnings || 0) +
-                referralBonus;
+                Number(
+                    referrer.referralEarnings || 0
+                ) + 600;
+
+
+            // Count this invited user
 
             referrer.invitedUsers =
-                Number(referrer.invitedUsers || 0) + 1;
+                Number(
+                    referrer.invitedUsers || 0
+                ) + 1;
+
 
             await referrer.save();
+
+
+            console.log(
+                "REFERRER BONUS ADDED:",
+                referrer.phone,
+                "+600 ETB"
+            );
+
+
+            console.log(
+                "REFERRER NEW BALANCE:",
+                referrer.balance
+            );
 
 
             // ======================================
@@ -1048,7 +1094,7 @@ if (
 
                 type: "Referral Bonus",
 
-                amount: referralBonus,
+                amount: 600,
 
                 status: "Approved",
 
@@ -1072,7 +1118,7 @@ if (
                 title: "Referral Bonus",
 
                 message:
-                    "You received 600 ETB referral bonus because your invited user made a qualifying deposit."
+                    "You received 600 ETB referral bonus because your invited user made their first qualifying deposit."
 
             });
 
@@ -1082,12 +1128,37 @@ if (
 
         console.log(
             "REFERRER NOT FOUND:",
-            user.referredBy
+            referralCode
         );
 
     }
 
 }
+
+
+// ======================================
+// SAVE NEW USER
+// ======================================
+
+await user.save();
+
+
+console.log(
+    "NEW USER BALANCE:",
+    user.balance
+);
+
+
+console.log(
+    "NEW USER BONUS:",
+    bonus
+);
+
+
+console.log(
+    "REFERRER BONUS:",
+    referralBonus
+);
         // ======================================
         // SAVE USER FIRST
         // ======================================
