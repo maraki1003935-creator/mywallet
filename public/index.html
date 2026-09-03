@@ -1,45 +1,268 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phone Login</title>
 
-    <link rel="stylesheet" href="style.css">
+```
+<title>MyWallet - Simple & Secure Digital Wallet</title>
+
+<link rel="stylesheet" href="style.css">
+```
+
 </head>
+
 <body>
 
-    <div class="container">
-        <h1>Welcome</h1>
-
-        <p>Enter your phone number</p>
-
-        <input
-            type="tel"
-            id="phone"
-            placeholder="+2519XXXXXXXX">
-
-        <br><br>
-
-        <button id="sendBtn">
-            Continue
-        </button>
-
-        <p id="message"></p>
-
-<input
-    type="text"
-    id="otp"
-    placeholder="Enter OTP">
-
-<br><br>
-
-<button id="verifyBtn">
-    Verify OTP
-</button>
+```
+<header class="navbar">
+    <div class="logo">
+        💰 MyWallet
     </div>
 
-    <script src="script.js"></script>
+    <a href="#login" class="login-link">
+        Login
+    </a>
+</header>
+
+
+<main>
+
+    <!-- HERO SECTION -->
+
+    <section class="hero">
+
+        <div class="hero-content">
+
+            <div class="badge">
+                🚀 Welcome to MyWallet
+            </div>
+
+            <h1>
+                Your Money.<br>
+                <span>Your Wallet.</span>
+            </h1>
+
+            <p>
+                A simple way to manage your wallet, deposits,
+                withdrawals, transfers and referrals — all in one place.
+            </p>
+
+            <a href="#login" class="hero-button">
+                Create Your Account →
+            </a>
+
+            <div class="small-text">
+                📱 Quick phone verification
+            </div>
+
+        </div>
+
+
+        <div class="wallet-card">
+
+            <div class="card-top">
+                <span>MyWallet</span>
+                <span>💳</span>
+            </div>
+
+            <p class="balance-title">
+                Available Balance
+            </p>
+
+            <h2>
+                ETB 0.00
+            </h2>
+
+            <div class="card-bottom">
+                <span>••••  ••••  ••••</span>
+                <span>MW</span>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- FEATURES -->
+
+    <section class="features">
+
+        <h2>
+            Everything You Need in One Wallet
+        </h2>
+
+        <p class="section-text">
+            Manage your account easily from your phone.
+        </p>
+
+
+        <div class="feature-grid">
+
+            <div class="feature">
+                <div class="icon">💰</div>
+                <h3>Deposit</h3>
+                <p>
+                    Add money to your wallet using the available payment options.
+                </p>
+            </div>
+
+
+            <div class="feature">
+                <div class="icon">📤</div>
+                <h3>Withdraw</h3>
+                <p>
+                    Request withdrawals directly from your wallet.
+                </p>
+            </div>
+
+
+            <div class="feature">
+                <div class="icon">🔄</div>
+                <h3>Transfer</h3>
+                <p>
+                    Send funds to other users quickly and easily.
+                </p>
+            </div>
+
+
+            <div class="feature">
+                <div class="icon">🎁</div>
+                <h3>Referral</h3>
+                <p>
+                    Invite friends and receive referral rewards according to the program terms.
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- LOGIN -->
+
+    <section class="login-section" id="login">
+
+        <div class="login-box">
+
+            <div class="login-icon">
+                📱
+            </div>
+
+            <h2>
+                Create Your Account
+            </h2>
+
+            <p>
+                Enter your phone number to continue.
+            </p>
+
+
+            <label for="phone">
+                Phone Number
+            </label>
+
+            <input
+                type="tel"
+                id="phone"
+                placeholder="+2519XXXXXXXX"
+                autocomplete="tel"
+            >
+
+
+            <button id="sendBtn">
+                Continue
+            </button>
+
+
+            <p id="message"></p>
+
+
+            <div id="otpArea">
+
+                <label for="otp">
+                    Verification Code
+                </label>
+
+                <input
+                    type="text"
+                    id="otp"
+                    placeholder="Enter OTP"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                >
+
+
+                <button id="verifyBtn">
+                    Verify OTP
+                </button>
+
+            </div>
+
+
+            <p class="security">
+                🔒 Your phone number is used for account verification.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- HOW IT WORKS -->
+
+    <section class="how">
+
+        <h2>
+            How MyWallet Works
+        </h2>
+
+
+        <div class="steps">
+
+            <div class="step">
+                <div>1</div>
+                <h3>Register</h3>
+                <p>Enter your phone number.</p>
+            </div>
+
+
+            <div class="step">
+                <div>2</div>
+                <h3>Verify</h3>
+                <p>Enter the OTP sent to your phone.</p>
+            </div>
+
+
+            <div class="step">
+                <div>3</div>
+                <h3>Use MyWallet</h3>
+                <p>Access your wallet dashboard.</p>
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+
+    <div class="footer-logo">
+        💰 MyWallet
+    </div>
+
+    <p>
+        © 2026 MyWallet. All rights reserved.
+    </p>
+
+</footer>
+
+
+<script src="script.js"></script>
+```
 
 </body>
 </html>
