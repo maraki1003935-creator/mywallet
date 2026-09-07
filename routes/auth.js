@@ -79,7 +79,9 @@ router.post("/login", async (req, res) => {
                 generateReferralCode();
 
 
-            // Make sure referral code is unique
+            // ==================================================
+            // MAKE SURE REFERRAL CODE IS UNIQUE
+            // ==================================================
 
             while (
                 await User.findOne({
@@ -114,9 +116,27 @@ router.post("/login", async (req, res) => {
                     validReferralCode =
                         referrer.referralCode;
 
+
                     console.log(
-                        "VALID REFERRER FOUND:",
+                        "================================"
+                    );
+
+                    console.log(
+                        "VALID REFERRER FOUND"
+                    );
+
+                    console.log(
+                        "REFERRER PHONE:",
                         referrer.phone
+                    );
+
+                    console.log(
+                        "REFERRER CODE:",
+                        referrer.referralCode
+                    );
+
+                    console.log(
+                        "================================"
                     );
 
                 } else {
@@ -139,6 +159,8 @@ router.post("/login", async (req, res) => {
 
                 phone: phone,
 
+                name: "New User",
+
                 balance: 0,
 
                 referralCode:
@@ -160,8 +182,16 @@ router.post("/login", async (req, res) => {
             });
 
 
+            // ==================================================
+            // SAVE USER
+            // ==================================================
+
             await user.save();
 
+
+            // ==================================================
+            // SHOW NEW USER INFORMATION
+            // ==================================================
 
             console.log(
                 "================================"
@@ -183,18 +213,42 @@ router.post("/login", async (req, res) => {
 
             console.log(
                 "REFERRED BY:",
-                user.referredBy
+                user.referredBy || "NONE"
             );
 
             console.log(
                 "================================"
             );
 
+
         } else {
+
+
+            // ==================================================
+            // EXISTING USER
+            // ==================================================
+
+            console.log(
+                "================================"
+            );
 
             console.log(
                 "EXISTING USER LOGIN:",
                 user.phone
+            );
+
+            console.log(
+                "OWN REFERRAL CODE:",
+                user.referralCode
+            );
+
+            console.log(
+                "REFERRED BY:",
+                user.referredBy || "NONE"
+            );
+
+            console.log(
+                "================================"
             );
 
         }
@@ -207,14 +261,17 @@ router.post("/login", async (req, res) => {
         const activity =
             new LoginActivity({
 
-                phone: user.phone,
+                phone:
+                    user.phone,
 
-                ip: req.ip,
+                ip:
+                    req.ip,
 
                 browser:
                     req.headers["user-agent"],
 
-                status: "Success"
+                status:
+                    "Success"
 
             });
 
@@ -223,7 +280,7 @@ router.post("/login", async (req, res) => {
 
 
         // ==================================================
-        // SEND USER TO FRONTEND
+        // SEND USER DATA TO FRONTEND
         // ==================================================
 
         res.json({
@@ -235,20 +292,25 @@ router.post("/login", async (req, res) => {
 
             user: {
 
-                _id: user._id,
+                _id:
+                    user._id,
 
-                phone: user.phone,
+                phone:
+                    user.phone,
 
-                name: user.name,
+                name:
+                    user.name,
 
                 balance:
-                    Number(user.balance || 0),
+                    Number(
+                        user.balance || 0
+                    ),
 
                 referralCode:
                     user.referralCode,
 
                 referredBy:
-                    user.referredBy,
+                    user.referredBy || "",
 
                 referralEarnings:
                     Number(
@@ -320,11 +382,13 @@ router.get(
             const deposits =
                 await Deposit.find({
 
-                    phone: phone
+                    phone:
+                        phone
 
                 }).sort({
 
-                    createdAt: -1
+                    createdAt:
+                        -1
 
                 });
 
@@ -333,7 +397,8 @@ router.get(
 
                 success: true,
 
-                deposits: deposits
+                deposits:
+                    deposits
 
             });
 
@@ -360,5 +425,9 @@ router.get(
     }
 );
 
+
+// ======================================================
+// EXPORT ROUTER
+// ======================================================
 
 module.exports = router;
