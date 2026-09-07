@@ -113,31 +113,54 @@ router.post("/login", async (req, res) => {
 
                 if (referrer) {
 
-                    validReferralCode =
-                        referrer.referralCode;
+                    // ==========================================
+                    // PREVENT SELF REFERRAL
+                    // ==========================================
+
+                    if (
+                        String(referrer.phone) ===
+                        String(phone)
+                    ) {
+
+                        console.log(
+                            "SELF REFERRAL BLOCKED:",
+                            phone
+                        );
+
+                    } else {
+
+                        validReferralCode =
+                            referrer.referralCode;
 
 
-                    console.log(
-                        "================================"
-                    );
+                        console.log(
+                            "================================"
+                        );
 
-                    console.log(
-                        "VALID REFERRER FOUND"
-                    );
+                        console.log(
+                            "VALID REFERRER FOUND"
+                        );
 
-                    console.log(
-                        "REFERRER PHONE:",
-                        referrer.phone
-                    );
+                        console.log(
+                            "REFERRER PHONE:",
+                            referrer.phone
+                        );
 
-                    console.log(
-                        "REFERRER CODE:",
-                        referrer.referralCode
-                    );
+                        console.log(
+                            "REFERRER CODE:",
+                            referrer.referralCode
+                        );
 
-                    console.log(
-                        "================================"
-                    );
+                        console.log(
+                            "NEW USER PHONE:",
+                            phone
+                        );
+
+                        console.log(
+                            "================================"
+                        );
+
+                    }
 
                 } else {
 
@@ -243,7 +266,124 @@ router.post("/login", async (req, res) => {
             );
 
             console.log(
-                "REFERRED BY:",
+                "REFERRED BY BEFORE:",
+                user.referredBy || "NONE"
+            );
+
+            console.log(
+                "REFERRAL CODE RECEIVED:",
+                referralCode || "NONE"
+            );
+
+
+            // ==================================================
+            // ADD REFERRAL TO OLD EXISTING USER
+            // ==================================================
+            //
+            // This is important.
+            //
+            // If the user was created before the referral
+            // system was added, referredBy may be empty.
+            //
+            // If they now login using:
+            //
+            // ?ref=ABC123
+            //
+            // we can attach ABC123 to their account.
+            //
+            // ==================================================
+
+            if (
+                !user.referredBy &&
+                referralCode
+            ) {
+
+                // ==============================================
+                // FIND REFERRER
+                // ==============================================
+
+                const referrer =
+                    await User.findOne({
+                        referralCode:
+                            referralCode
+                    });
+
+
+                if (referrer) {
+
+                    // ==========================================
+                    // PREVENT SELF REFERRAL
+                    // ==========================================
+
+                    if (
+                        String(referrer.phone) ===
+                        String(user.phone)
+                    ) {
+
+                        console.log(
+                            "SELF REFERRAL BLOCKED FOR EXISTING USER"
+                        );
+
+                    } else {
+
+                        // ======================================
+                        // SAVE REFERRER
+                        // ======================================
+
+                        user.referredBy =
+                            referrer.referralCode;
+
+
+                        await user.save();
+
+
+                        console.log(
+                            "================================"
+                        );
+
+                        console.log(
+                            "REFERRAL ADDED TO EXISTING USER"
+                        );
+
+                        console.log(
+                            "USER PHONE:",
+                            user.phone
+                        );
+
+                        console.log(
+                            "REFERRED BY:",
+                            user.referredBy
+                        );
+
+                        console.log(
+                            "REFERRER PHONE:",
+                            referrer.phone
+                        );
+
+                        console.log(
+                            "================================"
+                        );
+
+                    }
+
+                } else {
+
+                    console.log(
+                        "INVALID REFERRAL CODE FOR EXISTING USER:",
+                        referralCode
+                    );
+
+                }
+
+            }
+
+
+            // ==================================================
+            // SHOW FINAL USER INFORMATION
+            // ==================================================
+
+            console.log(
+                "REFERRED BY AFTER:",
                 user.referredBy || "NONE"
             );
 
@@ -254,9 +394,9 @@ router.post("/login", async (req, res) => {
         }
 
 
-        // ==================================================
+        // ======================================================
         // LOGIN ACTIVITY
-        // ==================================================
+        // ======================================================
 
         const activity =
             new LoginActivity({
@@ -279,9 +419,9 @@ router.post("/login", async (req, res) => {
         await activity.save();
 
 
-        // ==================================================
+        // ======================================================
         // SEND USER DATA TO FRONTEND
-        // ==================================================
+        // ======================================================
 
         res.json({
 
