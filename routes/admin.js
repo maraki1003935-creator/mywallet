@@ -120,199 +120,573 @@ router.post("/deposit/reject/:id", verifyAdmin, async (req, res) => {
     }
 
 });
-// ===============================
-// Get All Withdrawal Requests
-// ===============================
+// ======================================
+// WITHDRAWAL MANAGEMENT
+// ======================================
 
-router.get("/withdrawals", async (req, res) => {
+// ======================================
+// GET ALL WITHDRAWAL REQUESTS
+// ADMIN ONLY
+// ======================================
+
+router.get("/withdrawals", verifyAdmin, async (req, res) => {
 
     try {
 
-        const withdrawals = await Withdraw.find().sort({ createdAt: -1 });
+        const withdrawals = await Withdraw
+            .find()
+            .sort({ createdAt: -1 });
 
-        res.json(withdrawals);
+        res.json({
+            success: true,
+            withdrawals
+        });
 
     } catch (err) {
 
-        console.log(err);
+        console.log("GET WITHDRAWALS ERROR:", err);
 
         res.status(500).json({
-
             success: false,
-
             message: err.message
-
         });
 
     }
 
 });
 
-// ===============================
-// Approve Withdrawal
-// ===============================
 
-router.post("/withdraw/approve/:id", async (req, res) => {
+// ======================================
+// APPROVE WITHDRAWAL
+// ADMIN ONLY
+// ======================================
 
-    try {
+router.post(
+    "/withdraw/approve/:id",
+    verifyAdmin,
+    async (req, res) => {
 
-        const withdraw = await Withdraw.findById(req.params.id);
+        try {
 
-        if (!withdraw) {
+            // ======================================
+            // FIND WITHDRAWAL
+            // ======================================
+
+            const withdraw =
+                await Withdraw.findById(req.params.id);
+
+            if (!withdraw) {
+
+                return res.status(404).json({
+                    success: false,
+                    message: "Withdrawal not found."
+                });
+
+            }
+
+
+            // ======================================
+            // PREVENT DOUBLE APPROVAL
+            // ======================================
+
+            if (
+                String(withdraw.status).toLowerCase() ===
+                "approved"
+            ) {
+
+                return res.json({
+                    success: false,
+                    message: "Withdrawal already approved."
+                });
+
+            }
+
+
+            // ======================================
+            // PREVENT APPROVING REJECTED WITHDRAWAL
+            // ======================================
+
+            if (
+                String(withdraw.status).toLowerCase() ===
+                "rejected"
+            ) {
+
+                return res.json({
+                    success: false,
+                    message: "Rejected withdrawal cannot be approved."
+                });
+
+            }
+
+
+            // ======================================
+            // VALIDATE AMOUNT
+            // ======================================
+
+            const amount = Number(withdraw.amount);
+
+            if (
+                !Number.isFinite(amount) ||
+                amount <= 0
+            ) {
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid withdrawal amount."
+                });
+
+            }
+
+
+            // ======================================
+            // VALIDATE TELEBIRR NUMBER
+            // ======================================
+
+            const telebirr =
+                String(withdraw.telebirr || "").trim();
+
+            if (!telebirr) {
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Telebirr number is missing."
+                });
+
+            }
+
+
+            // ======================================
+            // FIND USER
+            // ======================================
+
+            const user =
+                await User.findOne({
+                    phone: withdraw.phone
+                });
+
+            if (!user) {
+
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "User not found: " +
+                        withdraw.phone
+                });
+
+            }
+
+
+            // ======================================
+            // CHECK USER BALANCE
+            // ======================================
+
+            const currentBalance =
+                Number(user.balance || 0);
+
+            if (currentBalance < amount) {
+
+                return res.json({
+                    success: false,
+                    message:
+                        "Insufficient user balance. " +
+                        "Available: " +
+                        currentBalance +
+                        " ETB, requested: " +
+                        amount +
+                        " ETB."
+                });
+
+            }
+
+
+            // ======================================
+            // SAVE OLD BALANCE
+            // ======================================
+
+            const oldBalance =
+                currentBalance;
+
+
+            // ======================================
+            // DEDUCT WITHDRAWAL
+            // ======================================
+
+            user.balance =
+                oldBalance - amount;
+
+
+            // ======================================
+            // SAVE USER
+            // ======================================
+
+            await user.save();
+
+
+            // ======================================
+            // MARK WITHDRAWAL APPROVED
+            // ======================================
+
+            withdraw.status = "Approved";
+
+            await withdraw.save();
+
+
+            // ======================================
+            // CREATE WITHDRAWAL TRANSACTION
+            // ======================================
+
+            await Transaction.create({
+
+                phone:
+                    user.phone,
+
+                type:
+                    "Withdrawal",
+
+                amount:
+                    amount,
+
+                status:
+                    "Approved",
+
+                reference:
+                    "WITHDRAW-" +
+                    String(withdraw._id)
+
+            });
+
+
+            // ======================================
+            // USER NOTIFICATION
+            // ======================================
+
+            await Notification.create({
+
+                phone:
+                    user.phone,
+
+                title:
+                    "Withdrawal Approved",
+
+                message:
+                    "Your withdrawal of " +
+                    amount +
+                    " ETB to Telebirr " +
+                    telebirr +
+                    " has been approved."
+
+            });
+
+
+            // ======================================
+            // LOG
+            // ======================================
+
+            console.log(
+                "===================================="
+            );
+
+            console.log(
+                "WITHDRAWAL APPROVED"
+            );
+
+            console.log(
+                "USER:",
+                user.phone
+            );
+
+            console.log(
+                "TELEBIRR:",
+                telebirr
+            );
+
+            console.log(
+                "AMOUNT:",
+                amount
+            );
+
+            console.log(
+                "OLD BALANCE:",
+                oldBalance
+            );
+
+            console.log(
+                "NEW BALANCE:",
+                user.balance
+            );
+
+            console.log(
+                "WITHDRAW CODE:",
+                withdraw.withdrawCode
+            );
+
+            console.log(
+                "===================================="
+            );
+
+
+            // ======================================
+            // RESPONSE
+            // ======================================
 
             return res.json({
 
+                success: true,
+
+                message:
+                    "Withdrawal approved successfully.",
+
+                withdrawalId:
+                    withdraw._id,
+
+                phone:
+                    user.phone,
+
+                telebirr:
+                    telebirr,
+
+                amount:
+                    amount,
+
+                oldBalance:
+                    oldBalance,
+
+                newBalance:
+                    Number(user.balance || 0),
+
+                status:
+                    withdraw.status
+
+            });
+
+        } catch (err) {
+
+            console.error(
+                "APPROVE WITHDRAWAL ERROR:",
+                err
+            );
+
+            return res.status(500).json({
+
                 success: false,
 
-                message: "Withdrawal not found."
+                message:
+                    err.message ||
+                    "Server error."
 
             });
 
         }
-
-        if (withdraw.status === "Approved") {
-
-            return res.json({
-
-                success: false,
-
-                message: "Already approved."
-
-            });
-
-        }
-
-        const user = await User.findOne({
-
-            phone: withdraw.phone
-
-        });
-
-        if (!user) {
-
-            return res.json({
-
-                success: false,
-
-                message: "User not found."
-
-            });
-
-        }
-
-        if (user.balance < withdraw.amount) {
-
-            return res.json({
-
-                success: false,
-
-                message: "Insufficient user balance."
-
-            });
-
-        }
-
-        user.balance -= withdraw.amount;
-
-        await user.save();
-
-        withdraw.status = "Approved";
-
-        await withdraw.save(); const notification = new Notification({
-
-    phone: withdraw.phone,
-
-    title: "Withdrawal Approved",
-
-    message: "Your withdrawal of " + withdraw.amount + " ETB has been approved."
-
-});
-
-await notification.save();
-
-        res.json({
-
-            success: true,
-
-            message: "Withdrawal approved."
-
-        });
-
-    } catch (err) {
-
-        console.log(err);
-
-        res.json({
-
-            success: false,
-
-            message: err.message
-
-        });
 
     }
+);
 
-});
 
-// ===============================
-// Reject Withdrawal
-// ===============================
+// ======================================
+// REJECT WITHDRAWAL
+// ADMIN ONLY
+// ======================================
 
-router.post("/withdraw/reject/:id", async (req, res) => {
+router.post(
+    "/withdraw/reject/:id",
+    verifyAdmin,
+    async (req, res) => {
 
-    try {
+        try {
 
-        const withdraw = await Withdraw.findById(req.params.id);
+            // ======================================
+            // FIND WITHDRAWAL
+            // ======================================
 
-        if (!withdraw) {
+            const withdraw =
+                await Withdraw.findById(req.params.id);
+
+            if (!withdraw) {
+
+                return res.status(404).json({
+                    success: false,
+                    message: "Withdrawal not found."
+                });
+
+            }
+
+
+            // ======================================
+            // PREVENT REJECTING APPROVED WITHDRAWAL
+            // ======================================
+
+            if (
+                String(withdraw.status).toLowerCase() ===
+                "approved"
+            ) {
+
+                return res.json({
+                    success: false,
+                    message:
+                        "Approved withdrawal cannot be rejected."
+                });
+
+            }
+
+
+            // ======================================
+            // PREVENT DOUBLE REJECTION
+            // ======================================
+
+            if (
+                String(withdraw.status).toLowerCase() ===
+                "rejected"
+            ) {
+
+                return res.json({
+                    success: false,
+                    message:
+                        "Withdrawal already rejected."
+                });
+
+            }
+
+
+            // ======================================
+            // MARK REJECTED
+            // ======================================
+
+            withdraw.status = "Rejected";
+
+            await withdraw.save();
+
+
+            // ======================================
+            // USER NOTIFICATION
+            // ======================================
+
+            await Notification.create({
+
+                phone:
+                    withdraw.phone,
+
+                title:
+                    "Withdrawal Rejected",
+
+                message:
+                    "Your withdrawal request of " +
+                    withdraw.amount +
+                    " ETB has been rejected."
+
+            });
+
+
+            // ======================================
+            // CREATE REJECTION TRANSACTION
+            // ======================================
+
+            await Transaction.create({
+
+                phone:
+                    withdraw.phone,
+
+                type:
+                    "Withdrawal Rejected",
+
+                amount:
+                    Number(withdraw.amount),
+
+                status:
+                    "Rejected",
+
+                reference:
+                    "WITHDRAW-REJECTED-" +
+                    String(withdraw._id)
+
+            });
+
+
+            // ======================================
+            // LOG
+            // ======================================
+
+            console.log(
+                "===================================="
+            );
+
+            console.log(
+                "WITHDRAWAL REJECTED"
+            );
+
+            console.log(
+                "USER:",
+                withdraw.phone
+            );
+
+            console.log(
+                "TELEBIRR:",
+                withdraw.telebirr
+            );
+
+            console.log(
+                "AMOUNT:",
+                withdraw.amount
+            );
+
+            console.log(
+                "WITHDRAW CODE:",
+                withdraw.withdrawCode
+            );
+
+            console.log(
+                "===================================="
+            );
+
+
+            // ======================================
+            // RESPONSE
+            // ======================================
 
             return res.json({
 
+                success: true,
+
+                message:
+                    "Withdrawal rejected successfully.",
+
+                withdrawalId:
+                    withdraw._id,
+
+                phone:
+                    withdraw.phone,
+
+                telebirr:
+                    withdraw.telebirr,
+
+                amount:
+                    Number(withdraw.amount),
+
+                status:
+                    withdraw.status
+
+            });
+
+        } catch (err) {
+
+            console.error(
+                "REJECT WITHDRAWAL ERROR:",
+                err
+            );
+
+            return res.status(500).json({
+
                 success: false,
 
-                message: "Withdrawal not found."
+                message:
+                    err.message ||
+                    "Server error."
 
             });
 
         }
 
-        withdraw.status = "Rejected";
-
-        await withdraw.save(); const notification = new Notification({
-
-    phone: withdraw.phone,
-
-    title: "Withdrawal Rejected",
-
-    message: "Your withdrawal request has been rejected."
-
-});
-
-await notification.save();
-
-        res.json({
-
-            success: true,
-
-            message: "Withdrawal rejected."
-
-        });
-
-    } catch (err) {
-
-        console.log(err);
-
-        res.json({
-
-            success: false,
-
-            message: err.message
-
-        });
-
     }
-
-});
+);
 // ======================================
 // ADMIN DASHBOARD
 // ======================================
