@@ -1,115 +1,727 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8">
+    <title>Manage Withdrawals</title>
 
-<title>Manage Withdrawals</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 30px;
+        }
 
-<style>
+        .back-btn {
+            display: inline-block;
+            background: #2196f3;
+            color: white;
+            text-decoration: none;
+            padding: 12px 22px;
+            border-radius: 6px;
+            margin-bottom: 35px;
+            font-size: 16px;
+        }
 
-body{
-font-family:Arial;
-background:#f5f5f5;
-margin:20px;
-}
+        .back-btn:hover {
+            background: #1976d2;
+        }
 
-h2{
-text-align:center;
-}
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-table{
-width:100%;
-border-collapse:collapse;
-background:white;
-}
+        .message {
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+        }
 
-th,td{
-border:1px solid #ddd;
-padding:10px;
-text-align:center;
-}
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
 
-th{
-background:#007bff;
-color:white;
-}
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 850px;
+        }
 
-button{
-padding:8px 15px;
-margin:2px;
-border:none;
-border-radius:5px;
-cursor:pointer;
-color:white;
-}
+        th {
+            background: #2196f3;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
 
-.approve{
-background:green;
-}
+        td {
+            padding: 14px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
 
-.reject{
-background:red;
-}
+        tr:hover {
+            background: #f8f8f8;
+        }
 
-.back{
-display:inline-block;
-margin-bottom:20px;
-padding:10px 20px;
-background:#007bff;
-color:white;
-text-decoration:none;
-border-radius:5px;
-}
+        .approve-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 9px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 3px;
+        }
 
-</style>
+        .approve-btn:hover {
+            background: #218838;
+        }
 
+        .reject-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 9px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 3px;
+        }
+
+        .reject-btn:hover {
+            background: #c82333;
+        }
+
+        .approve-btn:disabled,
+        .reject-btn:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
+        .pending {
+            color: #ff9800;
+            font-weight: bold;
+        }
+
+        .approved {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .rejected {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 30px;
+            color: #777;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .error {
+            color: red;
+            text-align: center;
+            padding: 20px;
+            font-weight: bold;
+        }
+
+        .refresh-btn {
+            display: block;
+            margin: 0 auto 20px auto;
+            background: #555;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .refresh-btn:hover {
+            background: #333;
+        }
+    </style>
 </head>
 
 <body>
 
+    <a href="/admin-dashboard.html" class="back-btn">
+        ← Back to Dashboard
+    </a>
+
+    <h1>Manage Withdrawals</h1>
+
+    <button class="refresh-btn" onclick="loadWithdrawals()">
+        🔄 Refresh
+    </button>
+
+    <div id="message" class="message"></div>
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Phone</th>
+                    <th>Telebirr</th>
+                    <th>Amount</th>
+                    <th>Withdraw Code</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="withdrawalTable">
+
+                <tr>
+                    <td colspan="7" class="loading">
+                        Loading withdrawals...
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
 <script>
 
-const token = localStorage.getItem("adminToken");
+/* ==========================================
+   GET ADMIN TOKEN
+========================================== */
 
-if(!token){
+function getAdminToken() {
 
-location.href="admin-login.html";
+    const possibleKeys = [
+        "adminToken",
+        "admin_token",
+        "token",
+        "adminJWT",
+        "adminJwt",
+        "jwt",
+        "authToken"
+    ];
 
+    for (const key of possibleKeys) {
+
+        const value = localStorage.getItem(key);
+
+        if (value) {
+            return value;
+        }
+    }
+
+    return null;
 }
+
+
+/* ==========================================
+   AUTHORIZATION HEADER
+========================================== */
+
+function getAuthHeaders() {
+
+    const token = getAdminToken();
+
+    const headers = {
+        "Content-Type": "application/json"
+    };
+
+    if (token) {
+
+        headers["Authorization"] =
+            "Bearer " + token;
+    }
+
+    return headers;
+}
+
+
+/* ==========================================
+   LOAD WITHDRAWALS
+========================================== */
+
+async function loadWithdrawals() {
+
+    const table =
+        document.getElementById("withdrawalTable");
+
+    const message =
+        document.getElementById("message");
+
+    table.innerHTML = `
+        <tr>
+            <td colspan="7" class="loading">
+                Loading withdrawals...
+            </td>
+        </tr>
+    `;
+
+    message.innerHTML = "";
+
+    try {
+
+        const response =
+            await fetch("/admin/withdrawals", {
+
+                method: "GET",
+
+                headers:
+                    getAuthHeaders()
+
+            });
+
+
+        console.log(
+            "Withdrawal response status:",
+            response.status
+        );
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Withdrawal API response:",
+            data
+        );
+
+
+        if (!response.ok) {
+
+            if (response.status === 401) {
+
+                table.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="error">
+                            Admin authorization failed.
+                            Please login to the admin panel again.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+            }
+
+            throw new Error(
+                data.message ||
+                "Failed to load withdrawals."
+            );
+        }
+
+
+        if (!data.success) {
+
+            throw new Error(
+                data.message ||
+                "Could not load withdrawals."
+            );
+        }
+
+
+        const withdrawals =
+            Array.isArray(data.withdrawals)
+                ? data.withdrawals
+                : [];
+
+
+        if (withdrawals.length === 0) {
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="7" class="empty">
+                        No withdrawal requests found.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        table.innerHTML = "";
+
+
+        withdrawals.forEach(
+            withdrawal => {
+
+                const row =
+                    document.createElement("tr");
+
+
+                const status =
+                    String(
+                        withdrawal.status || "Pending"
+                    );
+
+
+                const statusClass =
+                    status.toLowerCase();
+
+
+                let actions = "";
+
+
+                if (
+                    status.toLowerCase() ===
+                    "pending"
+                ) {
+
+                    actions = `
+
+                        <button
+                            class="approve-btn"
+                            onclick="approveWithdrawal('${withdrawal._id}')"
+                        >
+                            Approve
+                        </button>
+
+                        <button
+                            class="reject-btn"
+                            onclick="rejectWithdrawal('${withdrawal._id}')"
+                        >
+                            Reject
+                        </button>
+
+                    `;
+
+                } else {
+
+                    actions =
+                        `<span>${status}</span>`;
+                }
+
+
+                const date =
+                    withdrawal.createdAt
+                        ? new Date(
+                            withdrawal.createdAt
+                        ).toLocaleString()
+                        : "-";
+
+
+                row.innerHTML = `
+
+                    <td>
+                        ${escapeHtml(
+                            withdrawal.phone || "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            withdrawal.telebirr || "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${Number(
+                            withdrawal.amount || 0
+                        ).toLocaleString()}
+                        ETB
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            withdrawal.withdrawCode || "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(date)}
+                    </td>
+
+                    <td class="${statusClass}">
+                        ${escapeHtml(status)}
+                    </td>
+
+                    <td>
+                        ${actions}
+                    </td>
+
+                `;
+
+
+                table.appendChild(row);
+
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "LOAD WITHDRAWALS ERROR:",
+            error
+        );
+
+
+        table.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="7"
+                    class="error"
+                >
+                    Error loading withdrawals:
+                    ${escapeHtml(
+                        error.message
+                    )}
+                </td>
+
+            </tr>
+
+        `;
+    }
+}
+
+
+/* ==========================================
+   APPROVE WITHDRAWAL
+========================================== */
+
+async function approveWithdrawal(id) {
+
+    if (!id) {
+
+        alert(
+            "Withdrawal ID is missing."
+        );
+
+        return;
+    }
+
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to approve this withdrawal?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/admin/withdraw/approve/" +
+                encodeURIComponent(id),
+                {
+
+                    method: "POST",
+
+                    headers:
+                        getAuthHeaders()
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Approve response:",
+            data
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Approval failed."
+            );
+        }
+
+
+        if (!data.success) {
+
+            throw new Error(
+                data.message ||
+                "Approval failed."
+            );
+        }
+
+
+        alert(
+            data.message ||
+            "Withdrawal approved successfully."
+        );
+
+
+        await loadWithdrawals();
+
+
+    } catch (error) {
+
+        console.error(
+            "APPROVE WITHDRAWAL ERROR:",
+            error
+        );
+
+
+        alert(
+            "Error: " +
+            error.message
+        );
+    }
+}
+
+
+/* ==========================================
+   REJECT WITHDRAWAL
+========================================== */
+
+async function rejectWithdrawal(id) {
+
+    if (!id) {
+
+        alert(
+            "Withdrawal ID is missing."
+        );
+
+        return;
+    }
+
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to reject this withdrawal?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/admin/withdraw/reject/" +
+                encodeURIComponent(id),
+                {
+
+                    method: "POST",
+
+                    headers:
+                        getAuthHeaders()
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Reject response:",
+            data
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Rejection failed."
+            );
+        }
+
+
+        if (!data.success) {
+
+            throw new Error(
+                data.message ||
+                "Rejection failed."
+            );
+        }
+
+
+        alert(
+            data.message ||
+            "Withdrawal rejected successfully."
+        );
+
+
+        await loadWithdrawals();
+
+
+    } catch (error) {
+
+        console.error(
+            "REJECT WITHDRAWAL ERROR:",
+            error
+        );
+
+
+        alert(
+            "Error: " +
+            error.message
+        );
+    }
+}
+
+
+/* ==========================================
+   HTML ESCAPE
+========================================== */
+
+function escapeHtml(value) {
+
+    return String(value)
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#039;");
+}
+
+
+/* ==========================================
+   LOAD WHEN PAGE OPENS
+========================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        loadWithdrawals();
+
+    }
+);
 
 </script>
 
-<a class="back" href="admin.html">
-← Back to Dashboard
-</a>
-
-<h2>Manage Withdrawals</h2>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Phone</th>
-<th>Amount</th>
-<th>Status</th>
-<th>Action</th>
-
-</tr>
-
-</thead>
-
-<tbody id="withdrawTable">
-
-</tbody>
-
-</table>
-
-<script src="admin-withdraw.js"></script>
-
 </body>
-
 </html>
