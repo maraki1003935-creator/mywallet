@@ -1,10 +1,80 @@
 // ======================================
+// REFERRAL CODE
+// SAVE REFERRAL CODE FROM URL
+// ======================================
+
+(function saveReferralCodeFromURL() {
+
+    try {
+
+        const params =
+            new URLSearchParams(window.location.search);
+
+        const referral =
+            params.get("ref");
+
+        if (referral) {
+
+            const cleanReferral =
+                referral
+                    .trim()
+                    .toUpperCase();
+
+            if (cleanReferral) {
+
+                localStorage.setItem(
+                    "referralCode",
+                    cleanReferral
+                );
+
+                console.log(
+                    "================================"
+                );
+
+                console.log(
+                    "REFERRAL CODE FOUND IN URL:"
+                );
+
+                console.log(
+                    cleanReferral
+                );
+
+                console.log(
+                    "REFERRAL CODE SAVED"
+                );
+
+                console.log(
+                    "================================"
+                );
+
+            }
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "REFERRAL URL ERROR:",
+            error
+        );
+
+    }
+
+})();
+
+
+// ======================================
 // PHONE LOGIN
 // ======================================
 
-const sendBtn = document.getElementById("sendBtn");
-const phoneInput = document.getElementById("phone");
-const message = document.getElementById("message");
+const sendBtn =
+    document.getElementById("sendBtn");
+
+const phoneInput =
+    document.getElementById("phone");
+
+const message =
+    document.getElementById("message");
 
 
 // ======================================
@@ -13,255 +83,411 @@ const message = document.getElementById("message");
 
 if (sendBtn) {
 
-    sendBtn.addEventListener("click", async () => {
+    sendBtn.addEventListener(
+        "click",
+        async () => {
 
-        const phone = phoneInput.value.trim();
-
-
-        // --------------------------------------
-        // CHECK PHONE
-        // --------------------------------------
-
-        if (!phone) {
-
-            message.style.color = "red";
-
-            message.textContent =
-                "Please enter your phone number.";
-
-            return;
-        }
+            const phone =
+                phoneInput.value.trim();
 
 
-        // --------------------------------------
-        // SEND LOGIN REQUEST
-        // --------------------------------------
+            // --------------------------------------
+            // CHECK PHONE
+            // --------------------------------------
 
-        try {
+            if (!phone) {
 
-            message.style.color = "black";
+                if (message) {
 
-            message.textContent =
-                "Please wait...";
+                    message.style.color =
+                        "red";
 
+                    message.textContent =
+                        "Please enter your phone number.";
 
-            const response = await fetch(
-                "/auth/login",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        phone: phone
-                    })
                 }
-            );
+
+                return;
+            }
 
 
-            const data =
-                await response.json();
+            // ======================================
+            // GET SAVED REFERRAL CODE
+            // ======================================
 
+            const urlParams =
+                new URLSearchParams(
+                    window.location.search
+                );
+
+
+            const urlReferral =
+                urlParams.get("ref");
+
+
+            let referralCode =
+                urlReferral ||
+                localStorage.getItem(
+                    "referralCode"
+                ) ||
+                "";
+
+
+            referralCode =
+                String(referralCode)
+                    .trim()
+                    .toUpperCase();
+
+
+            // ======================================
+            // SAVE REFERRAL CODE
+            // ======================================
+
+            if (referralCode) {
+
+                localStorage.setItem(
+                    "referralCode",
+                    referralCode
+                );
+
+            }
+
+
+            // ======================================
+            // SHOW REFERRAL CODE IN CONSOLE
+            // ======================================
 
             console.log(
-                "LOGIN RESPONSE:",
-                data
+                "================================"
+            );
+
+            console.log(
+                "LOGIN PHONE:",
+                phone
+            );
+
+            console.log(
+                "REFERRAL CODE:",
+                referralCode || "NONE"
+            );
+
+            console.log(
+                "================================"
             );
 
 
             // --------------------------------------
-            // LOGIN SUCCESS
+            // SEND LOGIN REQUEST
             // --------------------------------------
 
-            if (data.success) {
+            try {
 
+                if (message) {
 
-                // ==================================
-                // SAVE EXACT PHONE NUMBER
-                // ==================================
+                    message.style.color =
+                        "black";
 
-                const loggedInPhone =
-                    phone.trim();
-
-
-                // ----------------------------------
-                // LOCAL STORAGE
-                // ----------------------------------
-
-                localStorage.setItem(
-                    "phone",
-                    loggedInPhone
-                );
-
-                localStorage.setItem(
-                    "userPhone",
-                    loggedInPhone
-                );
-
-
-                // ----------------------------------
-                // SESSION STORAGE
-                // ----------------------------------
-
-                sessionStorage.setItem(
-                    "phone",
-                    loggedInPhone
-                );
-
-                sessionStorage.setItem(
-                    "userPhone",
-                    loggedInPhone
-                );
-
-
-                // ----------------------------------
-                // SAVE USER OBJECT
-                // ----------------------------------
-
-                let savedUser = {
-                    phone: loggedInPhone
-                };
-
-
-                if (data.user) {
-
-                    savedUser = {
-                        ...data.user,
-                        phone: loggedInPhone
-                    };
+                    message.textContent =
+                        "Please wait...";
 
                 }
 
 
-                localStorage.setItem(
-                    "user",
-                    JSON.stringify(savedUser)
-                );
+                const response =
+                    await fetch(
+                        "/auth/login",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+
+                                    phone:
+                                        phone,
+
+                                    referralCode:
+                                        referralCode
+
+                                })
+                        }
+                    );
 
 
-                // ----------------------------------
-                // SAVE USER ID
-                // ----------------------------------
+                // ==================================
+                // CHECK HTTP RESPONSE
+                // ==================================
 
-                if (
-                    data.user &&
-                    data.user._id
-                ) {
+                if (!response.ok) {
 
-                    localStorage.setItem(
-                        "userId",
-                        data.user._id
+                    throw new Error(
+                        "Server returned HTTP " +
+                        response.status
                     );
 
                 }
 
 
-                // ==================================
-                // VERIFY PHONE WAS SAVED
-                // ==================================
+                const data =
+                    await response.json();
+
 
                 console.log(
-                    "================================"
-                );
-
-                console.log(
-                    "LOGIN SUCCESS"
-                );
-
-                console.log(
-                    "PHONE SAVED:",
-                    loggedInPhone
-                );
-
-                console.log(
-                    "localStorage phone:",
-                    localStorage.getItem("phone")
-                );
-
-                console.log(
-                    "localStorage userPhone:",
-                    localStorage.getItem("userPhone")
-                );
-
-                console.log(
-                    "sessionStorage phone:",
-                    sessionStorage.getItem("phone")
-                );
-
-                console.log(
-                    "SAVED USER:",
-                    localStorage.getItem("user")
-                );
-
-                console.log(
-                    "================================"
+                    "LOGIN RESPONSE:",
+                    data
                 );
 
 
                 // --------------------------------------
-                // SUCCESS MESSAGE
+                // LOGIN SUCCESS
                 // --------------------------------------
 
-                message.style.color =
-                    "green";
-
-                message.textContent =
-                    "Login successful.";
+                if (data.success) {
 
 
-                // --------------------------------------
-                // GO TO DASHBOARD
-                // --------------------------------------
+                    // ==================================
+                    // SAVE EXACT PHONE NUMBER
+                    // ==================================
 
-                setTimeout(() => {
-
-                    window.location.href =
-                        "/dashboard.html";
-
-                }, 500);
+                    const loggedInPhone =
+                        phone.trim();
 
 
-            } else {
+                    // ----------------------------------
+                    // LOCAL STORAGE
+                    // ----------------------------------
 
-                // --------------------------------------
-                // LOGIN FAILED
-                // --------------------------------------
+                    localStorage.setItem(
+                        "phone",
+                        loggedInPhone
+                    );
 
-                message.style.color =
-                    "red";
+                    localStorage.setItem(
+                        "userPhone",
+                        loggedInPhone
+                    );
 
-                message.textContent =
-                    data.message ||
-                    "Login failed.";
+
+                    // ----------------------------------
+                    // SESSION STORAGE
+                    // ----------------------------------
+
+                    sessionStorage.setItem(
+                        "phone",
+                        loggedInPhone
+                    );
+
+                    sessionStorage.setItem(
+                        "userPhone",
+                        loggedInPhone
+                    );
+
+
+                    // ==================================
+                    // SAVE REFERRAL CODE
+                    // ==================================
+
+                    if (referralCode) {
+
+                        localStorage.setItem(
+                            "referralCode",
+                            referralCode
+                        );
+
+                    }
+
+
+                    // ----------------------------------
+                    // SAVE USER OBJECT
+                    // ----------------------------------
+
+                    let savedUser = {
+
+                        phone:
+                            loggedInPhone
+
+                    };
+
+
+                    if (data.user) {
+
+                        savedUser = {
+
+                            ...data.user,
+
+                            phone:
+                                loggedInPhone
+
+                        };
+
+                    }
+
+
+                    localStorage.setItem(
+                        "user",
+                        JSON.stringify(
+                            savedUser
+                        )
+                    );
+
+
+                    // ----------------------------------
+                    // SAVE USER ID
+                    // ----------------------------------
+
+                    if (
+                        data.user &&
+                        data.user._id
+                    ) {
+
+                        localStorage.setItem(
+                            "userId",
+                            data.user._id
+                        );
+
+                    }
+
+
+                    // ==================================
+                    // VERIFY EVERYTHING WAS SAVED
+                    // ==================================
+
+                    console.log(
+                        "================================"
+                    );
+
+                    console.log(
+                        "LOGIN SUCCESS"
+                    );
+
+                    console.log(
+                        "PHONE SAVED:",
+                        loggedInPhone
+                    );
+
+                    console.log(
+                        "REFERRAL CODE SAVED:",
+                        localStorage.getItem(
+                            "referralCode"
+                        )
+                    );
+
+                    console.log(
+                        "localStorage phone:",
+                        localStorage.getItem(
+                            "phone"
+                        )
+                    );
+
+                    console.log(
+                        "localStorage userPhone:",
+                        localStorage.getItem(
+                            "userPhone"
+                        )
+                    );
+
+                    console.log(
+                        "sessionStorage phone:",
+                        sessionStorage.getItem(
+                            "phone"
+                        )
+                    );
+
+                    console.log(
+                        "SAVED USER:",
+                        localStorage.getItem(
+                            "user"
+                        )
+                    );
+
+                    console.log(
+                        "================================"
+                    );
+
+
+                    // --------------------------------------
+                    // SUCCESS MESSAGE
+                    // --------------------------------------
+
+                    if (message) {
+
+                        message.style.color =
+                            "green";
+
+                        message.textContent =
+                            "Login successful.";
+
+                    }
+
+
+                    // --------------------------------------
+                    // GO TO DASHBOARD
+                    // --------------------------------------
+
+                    setTimeout(
+                        () => {
+
+                            window.location.href =
+                                "/dashboard.html";
+
+                        },
+                        500
+                    );
+
+
+                } else {
+
+
+                    // --------------------------------------
+                    // LOGIN FAILED
+                    // --------------------------------------
+
+                    if (message) {
+
+                        message.style.color =
+                            "red";
+
+                        message.textContent =
+                            data.message ||
+                            "Login failed.";
+
+                    }
+
+                }
+
+
+            } catch (error) {
+
+                console.error(
+                    "LOGIN ERROR:",
+                    error
+                );
+
+
+                if (message) {
+
+                    message.style.color =
+                        "red";
+
+                    message.textContent =
+                        "Server error. Please try again.";
+
+                }
 
             }
 
-        } catch (error) {
-
-            console.error(
-                "LOGIN ERROR:",
-                error
-            );
-
-
-            message.style.color =
-                "red";
-
-            message.textContent =
-                "Server error. Please try again.";
-
         }
-
-    });
+    );
 
 }
 
 
 // ======================================
-// CHECK SAVED PHONE WHEN PAGE OPENS
+// CHECK SAVED LOGIN WHEN PAGE OPENS
 // ======================================
 
 console.log(
@@ -288,6 +514,13 @@ console.log(
 );
 
 console.log(
+    "Referral code:",
+    localStorage.getItem(
+        "referralCode"
+    )
+);
+
+console.log(
     "User:",
     localStorage.getItem("user")
 );
@@ -303,17 +536,38 @@ console.log(
 
 function logout() {
 
-    localStorage.removeItem("phone");
+    localStorage.removeItem(
+        "phone"
+    );
 
-    localStorage.removeItem("userPhone");
+    localStorage.removeItem(
+        "userPhone"
+    );
 
-    localStorage.removeItem("userId");
+    localStorage.removeItem(
+        "userId"
+    );
 
-    localStorage.removeItem("user");
+    localStorage.removeItem(
+        "user"
+    );
 
-    sessionStorage.removeItem("phone");
+    // ----------------------------------
+    // REMOVE REFERRAL CODE TOO
+    // ----------------------------------
 
-    sessionStorage.removeItem("userPhone");
+    localStorage.removeItem(
+        "referralCode"
+    );
+
+
+    sessionStorage.removeItem(
+        "phone"
+    );
+
+    sessionStorage.removeItem(
+        "userPhone"
+    );
 
 
     window.location.href =
@@ -322,4 +576,5 @@ function logout() {
 }
 
 
-window.logout = logout;
+window.logout =
+    logout;

@@ -1031,26 +1031,40 @@ router.post(
 
             let userBonus = 0;
 
-            if (
-                isFirstApprovedDeposit &&
-                user.referralPaid !== true
-            ) {
+if (
+    isFirstApprovedDeposit &&
+    user.referralPaid !== true
+) {
 
-                userBonus = 600;
+    // ======================================
+    // FIRST DEPOSIT BONUS = 12%
+    // ======================================
 
-                user.balance =
-                    Number(user.balance || 0) + 600;
+    userBonus =
+        Math.round(
+            Number(amount) * 0.12 * 100
+        ) / 100;
 
-                user.referralPaid = true;
 
-                user.totalEarnings =
-                    Number(user.totalEarnings || 0) + 600;
+    user.balance =
+        Number(user.balance || 0) +
+        userBonus;
 
-                console.log(
-                    "NEW USER BONUS: +600 ETB"
-                );
-            }
 
+    user.referralPaid = true;
+
+
+    user.totalEarnings =
+        Number(user.totalEarnings || 0) +
+        userBonus;
+
+
+    console.log(
+        "NEW USER BONUS:",
+        userBonus,
+        "ETB"
+    );
+}
 
             // ======================================
             // SAVE DEPOSITOR
@@ -1098,7 +1112,7 @@ router.post(
             // CREATE NEW USER BONUS TRANSACTION
             // ======================================
 
-            if (userBonus === 600) {
+            if (userBonus > 0) {
 
                 await Transaction.create({
 
@@ -1106,7 +1120,7 @@ router.post(
 
                     type: "Deposit Bonus",
 
-                    amount: 600,
+                    amount: userBonus,
 
                     status: "Approved",
 
@@ -1136,17 +1150,46 @@ router.post(
             // ======================================
 
             // ======================================
+// ======================================
 // REFERRER BONUS
+// ======================================
+//
+// RULE:
+//
+// A refers B
+// A refers C
+// A refers D
+//
+// Every different referred user gets ONE referral bonus
+// on their FIRST approved deposit.
+//
+// Referral bonus = 12% of that referred user's
+// FIRST approved deposit.
+//
+// Example:
+//
+// B first deposit = 50,000
+// B gets 50,000 + 6,000
+// A gets 6,000
+//
+// C first deposit = 20,000
+// C gets 20,000 + 2,400
+// A gets 2,400
+//
+// D first deposit = 5,000
+// D gets 5,000 + 600
+// A gets 600
+//
+// B's second deposit = NO referral bonus to A.
+// C's second deposit = NO referral bonus to A.
+// D's second deposit = NO referral bonus to A.
+//
+// A can therefore earn from B + C + D + more users.
 // ======================================
 
 let referrerBonus = 0;
 let referrer = null;
 
-
-// ======================================================
-// ONLY THE INVITED USER'S FIRST APPROVED DEPOSIT
-// CAN PAY THE REFERRER
-// ======================================================
 
 if (
     isFirstApprovedDeposit &&
@@ -1179,9 +1222,9 @@ if (
     );
 
 
-    // ==================================================
+    // ======================================
     // FIND REFERRER
-    // ==================================================
+    // ======================================
 
     referrer =
         await User.findOne({
@@ -1204,9 +1247,9 @@ if (
         );
 
 
-        // ==============================================
+        // ======================================
         // PREVENT SELF REFERRAL
-        // ==============================================
+        // ======================================
 
         if (
             String(referrer.phone).trim() ===
@@ -1222,22 +1265,25 @@ if (
         } else {
 
 
-            // ==========================================
-            // CHECK WHETHER THIS SPECIFIC USER
+            // ======================================
+            // CHECK IF THIS SPECIFIC USER
             // ALREADY GENERATED A REFERRAL BONUS
-            // ==========================================
+            // ======================================
 
             const previousReferralBonus =
                 await Transaction.findOne({
 
-                    phone: referrer.phone,
+                    phone:
+                        referrer.phone,
 
-                    type: "Referral Bonus",
+                    type:
+                        "Referral Bonus",
 
                     reference: {
                         $regex:
                             "^REFERRAL-" +
-                            String(user._id)
+                            String(user._id) +
+                            "-"
                     }
 
                 });
@@ -1259,11 +1305,68 @@ if (
                     referrer.phone
                 );
 
+
             } else {
 
 
                 // ======================================
-                // PAY REFERRER 600 ETB
+                // REFERRAL BONUS
+                // ======================================
+                //
+                // IMPORTANT:
+                //
+                // Uses the invited user's FIRST
+                // approved deposit amount.
+                //
+                // 12% of first deposit.
+                //
+                // ======================================
+
+                const referralBonus =
+                    Math.round(
+                        Number(amount) * 0.12 * 100
+                    ) / 100;
+
+
+                referrerBonus =
+                    referralBonus;
+
+
+                console.log(
+                    "===================================="
+                );
+
+                console.log(
+                    "REFERRAL BONUS CALCULATION"
+                );
+
+                console.log(
+                    "INVITED USER:",
+                    user.phone
+                );
+
+                console.log(
+                    "FIRST DEPOSIT:",
+                    amount
+                );
+
+                console.log(
+                    "12% BONUS:",
+                    referralBonus
+                );
+
+                console.log(
+                    "REFERRER:",
+                    referrer.phone
+                );
+
+                console.log(
+                    "===================================="
+                );
+
+
+                // ======================================
+                // ADD BONUS TO REFERRER WALLET
                 // ======================================
 
                 const oldReferrerBalance =
@@ -1273,37 +1376,41 @@ if (
 
 
                 referrer.balance =
-                    oldReferrerBalance + 600;
+                    oldReferrerBalance +
+                    referralBonus;
 
 
                 // ======================================
-                // REFERRAL EARNINGS
+                // UPDATE REFERRAL EARNINGS
                 // ======================================
 
                 referrer.referralEarnings =
                     Number(
                         referrer.referralEarnings || 0
-                    ) + 600;
+                    ) +
+                    referralBonus;
 
 
                 // ======================================
-                // TOTAL EARNINGS
+                // UPDATE TOTAL EARNINGS
                 // ======================================
 
                 referrer.totalEarnings =
                     Number(
                         referrer.totalEarnings || 0
-                    ) + 600;
+                    ) +
+                    referralBonus;
 
 
                 // ======================================
-                // COUNT INVITED USER
+                // COUNT THIS INVITED USER
                 // ======================================
 
                 referrer.invitedUsers =
                     Number(
                         referrer.invitedUsers || 0
-                    ) + 1;
+                    ) +
+                    1;
 
 
                 // ======================================
@@ -1311,9 +1418,6 @@ if (
                 // ======================================
 
                 await referrer.save();
-
-
-                referrerBonus = 600;
 
 
                 // ======================================
@@ -1329,7 +1433,7 @@ if (
                         "Referral Bonus",
 
                     amount:
-                        600,
+                        referralBonus,
 
                     status:
                         "Approved",
@@ -1356,7 +1460,9 @@ if (
                         "Referral Bonus",
 
                     message:
-                        "You received 600 ETB referral bonus because your invited user made their first approved deposit."
+                        "You received " +
+                        referralBonus +
+                        " ETB referral bonus from your invited user's first approved deposit."
 
                 });
 
@@ -1384,7 +1490,13 @@ if (
                 );
 
                 console.log(
-                    "BONUS: +600 ETB"
+                    "FIRST DEPOSIT:",
+                    amount
+                );
+
+                console.log(
+                    "BONUS 12%:",
+                    referralBonus
                 );
 
                 console.log(
@@ -1402,8 +1514,7 @@ if (
 
     }
 
-}
-
+}        
             // ======================================
             // DEPOSITOR NOTIFICATION
             // ======================================
@@ -1413,12 +1524,14 @@ if (
                 " ETB deposit was added to your wallet.";
 
 
-            if (userBonus === 600) {
+            if (userBonus > 0) {
 
-                userMessage +=
-                    " You received 600 ETB new-user bonus.";
+    userMessage +=
+        " You received " +
+        userBonus +
+        " ETB first-deposit bonus.";
 
-            }
+}
 
 
             await Notification.create({
