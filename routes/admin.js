@@ -280,46 +280,70 @@ router.post(
             // CHECK USER BALANCE
             // ======================================
 
-            const currentBalance =
-                Number(user.balance || 0);
-
-            if (currentBalance < amount) {
-
-                return res.json({
-                    success: false,
-                    message:
-                        "Insufficient user balance. " +
-                        "Available: " +
-                        currentBalance +
-                        " ETB, requested: " +
-                        amount +
-                        " ETB."
-                });
-
-            }
-
-
             // ======================================
-            // SAVE OLD BALANCE
-            // ======================================
+// CALCULATE 15% VAT
+// ======================================
 
-            const oldBalance =
-                currentBalance;
+const VAT_RATE = 0.15;
+
+const vat =
+    Math.round(
+        amount * VAT_RATE * 100
+    ) / 100;
+
+const payoutAmount =
+    Math.round(
+        (amount - vat) * 100
+    ) / 100;
 
 
-            // ======================================
-            // DEDUCT WITHDRAWAL
-            // ======================================
+// ======================================
+// CHECK USER BALANCE
+// ======================================
 
-            user.balance =
-                oldBalance - amount;
+const currentBalance =
+    Number(user.balance || 0);
+
+if (currentBalance < amount) {
+
+    return res.json({
+        success: false,
+        message:
+            "Insufficient user balance. " +
+            "Available: " +
+            currentBalance +
+            " ETB, requested: " +
+            amount +
+            " ETB."
+    });
+
+}
 
 
-            // ======================================
-            // SAVE USER
-            // ======================================
+// ======================================
+// SAVE OLD BALANCE
+// ======================================
 
-            await user.save();
+const oldBalance =
+    currentBalance;
+
+
+// ======================================
+// DEDUCT FULL WITHDRAWAL AMOUNT
+// VAT IS INCLUDED IN THIS AMOUNT
+// ======================================
+
+user.balance =
+    Math.round(
+        (oldBalance - amount) * 100
+    ) / 100;
+
+
+// ======================================
+// SAVE USER
+// ======================================
+
+await user.save();
 
 
             // ======================================
@@ -337,23 +361,23 @@ router.post(
 
             await Transaction.create({
 
-                phone:
-                    user.phone,
+    phone:
+        user.phone,
 
-                type:
-                    "Withdrawal",
+    type:
+        "Withdrawal",
 
-                amount:
-                    amount,
+    amount:
+        amount,
 
-                status:
-                    "Approved",
+    status:
+        "Approved",
 
-                reference:
-                    "WITHDRAW-" +
-                    String(withdraw._id)
+    reference:
+        "WITHDRAW-" +
+        String(withdraw._id)
 
-            });
+});
 
 
             // ======================================
@@ -369,11 +393,15 @@ router.post(
                     "Withdrawal Approved",
 
                 message:
-                    "Your withdrawal of " +
-                    amount +
-                    " ETB to Telebirr " +
-                    telebirr +
-                    " has been approved."
+    "Your withdrawal request of " +
+    amount +
+    " ETB has been approved. " +
+    "VAT (15%): " +
+    vat +
+    " ETB. " +
+    "Amount sent to Telebirr: " +
+    payoutAmount +
+    " ETB."
 
             });
 
@@ -431,33 +459,42 @@ router.post(
 
             return res.json({
 
-                success: true,
+    success: true,
 
-                message:
-                    "Withdrawal approved successfully.",
+    message:
+        "Withdrawal approved successfully.",
 
-                withdrawalId:
-                    withdraw._id,
+    withdrawalId:
+        withdraw._id,
 
-                phone:
-                    user.phone,
+    phone:
+        user.phone,
 
-                telebirr:
-                    telebirr,
+    telebirr:
+        telebirr,
 
-                amount:
-                    amount,
+    requestedAmount:
+        amount,
 
-                oldBalance:
-                    oldBalance,
+    vatRate:
+        15,
 
-                newBalance:
-                    Number(user.balance || 0),
+    vat:
+        vat,
 
-                status:
-                    withdraw.status
+    payoutAmount:
+        payoutAmount,
 
-            });
+    oldBalance:
+        oldBalance,
+
+    newBalance:
+        Number(user.balance || 0),
+
+        status:
+        withdraw.status
+
+});
 
         } catch (err) {
 
@@ -479,6 +516,7 @@ router.post(
         }
 
     }
+
 );
 
 
