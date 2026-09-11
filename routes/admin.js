@@ -281,20 +281,34 @@ router.post(
             // ======================================
 
             // ======================================
+// ======================================
 // CALCULATE 15% VAT
 // ======================================
 
 const VAT_RATE = 0.15;
 
+// Full amount requested by user
+const requestedAmount =
+    Math.round(Number(amount) * 100) / 100;
+
+// 15% VAT
 const vat =
     Math.round(
-        amount * VAT_RATE * 100
+        requestedAmount * VAT_RATE * 100
     ) / 100;
 
+// Amount actually sent to user's Telebirr
 const payoutAmount =
     Math.round(
-        (amount - vat) * 100
+        (requestedAmount - vat) * 100
     ) / 100;
+
+console.log("====================================");
+console.log("WITHDRAWAL VAT CALCULATION");
+console.log("REQUESTED AMOUNT:", requestedAmount);
+console.log("VAT 15%:", vat);
+console.log("TELEBIRR PAYOUT:", payoutAmount);
+console.log("====================================");
 
 
 // ======================================
@@ -304,7 +318,7 @@ const payoutAmount =
 const currentBalance =
     Number(user.balance || 0);
 
-if (currentBalance < amount) {
+if (currentBalance < requestedAmount) {
 
     return res.json({
         success: false,
@@ -313,7 +327,7 @@ if (currentBalance < amount) {
             "Available: " +
             currentBalance +
             " ETB, requested: " +
-            amount +
+            requestedAmount +
             " ETB."
     });
 
@@ -335,7 +349,7 @@ const oldBalance =
 
 user.balance =
     Math.round(
-        (oldBalance - amount) * 100
+        (oldBalance - requestedAmount) * 100
     ) / 100;
 
 
@@ -347,12 +361,22 @@ await user.save();
 
 
             // ======================================
-            // MARK WITHDRAWAL APPROVED
-            // ======================================
+// SAVE VAT AND TELEBIRR PAYOUT
+// ======================================
 
-            withdraw.status = "Approved";
+withdraw.amount = requestedAmount;
 
-            await withdraw.save();
+withdraw.vat = vat;
+
+withdraw.payoutAmount = payoutAmount;
+
+// ======================================
+// MARK WITHDRAWAL APPROVED
+// ======================================
+
+withdraw.status = "Approved";
+
+await withdraw.save();
 
 
             // ======================================
@@ -368,7 +392,7 @@ await user.save();
         "Withdrawal",
 
     amount:
-        amount,
+    requestedAmount,
 
     status:
         "Approved",
@@ -474,7 +498,7 @@ await user.save();
         telebirr,
 
     requestedAmount:
-        amount,
+    requestedAmount,
 
     vatRate:
         15,

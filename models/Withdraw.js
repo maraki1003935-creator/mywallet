@@ -13,9 +13,19 @@ const withdrawSchema = new mongoose.Schema({
     },
 
     amount: {
-        type: Number,
-        required: true
-    },
+    type: Number,
+    required: true
+},
+
+vat: {
+    type: Number,
+    default: 0
+},
+
+payoutAmount: {
+    type: Number,
+    default: 0
+},
 
     withdrawCode: {
         type: String,
