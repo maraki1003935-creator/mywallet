@@ -269,7 +269,7 @@ async function loadWithdrawals() {
 
     table.innerHTML = `
         <tr>
-            <td colspan="7" class="loading">
+            <td class="loading">
                 Loading withdrawals...
             </td>
         </tr>
@@ -312,7 +312,7 @@ async function loadWithdrawals() {
 
                 table.innerHTML = `
                     <tr>
-                        <td colspan="7" class="error">
+                        <td colspan="9" class="error">
                             Admin authorization failed.
                             Please login to the admin panel again.
                         </td>
@@ -348,7 +348,7 @@ async function loadWithdrawals() {
 
             table.innerHTML = `
                 <tr>
-                    <td colspan="7" class="empty">
+                    <td colspan="9" class="empty">
                         No withdrawal requests found.
                     </td>
                 </tr>
@@ -501,7 +501,7 @@ async function loadWithdrawals() {
             <tr>
 
                 <td
-                    colspan="7"
+                    colspan="9"
                     class="error"
                 >
                     Error loading withdrawals:

@@ -371,9 +371,26 @@ withdraw.vat = vat;
 withdraw.payoutAmount = payoutAmount;
 
 // ======================================
-// MARK WITHDRAWAL APPROVED
+// SAVE WITHDRAWAL VAT AND PAYOUT
 // ======================================
 
+// Requested amount remains the full withdrawal amount
+withdraw.amount = amount;
+
+// 15% VAT
+withdraw.vat = vat;
+
+// Amount actually sent to Telebirr
+withdraw.payoutAmount = payoutAmount;
+
+// Approve withdrawal
+// ======================================
+// SAVE WITHDRAWAL DETAILS
+// ======================================
+
+withdraw.amount = amount;
+withdraw.vat = vat;
+withdraw.payoutAmount = payoutAmount;
 withdraw.status = "Approved";
 
 await withdraw.save();
@@ -2157,22 +2174,55 @@ router.get("/deposits/:phone", async (req, res) => {
 });
 
 // ======================================
-// USER WITHDRAWALS
+// USER WITHDRAWAL HISTORY
 // ======================================
 
 router.get("/withdrawals/:phone", async (req, res) => {
 
-    const withdrawals = await Withdraw.find({
+    try {
 
-        phone: req.params.phone
+        const phone = String(
+            req.params.phone || ""
+        ).trim();
 
-    }).sort({
+        if (!phone) {
 
-        createdAt: -1
+            return res.status(400).json({
+                success: false,
+                message: "Phone number is required.",
+                withdrawals: []
+            });
 
-    });
+        }
 
-    res.json(withdrawals);
+        const withdrawals =
+            await Withdraw.find({
+                phone: phone
+            }).sort({
+                createdAt: -1
+            });
+
+        return res.json({
+            success: true,
+            withdrawals: withdrawals
+        });
+
+    } catch (err) {
+
+        console.error(
+            "USER WITHDRAWAL HISTORY ERROR:",
+            err
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                err.message ||
+                "Failed to load withdrawal history.",
+            withdrawals: []
+        });
+
+    }
 
 });
 
