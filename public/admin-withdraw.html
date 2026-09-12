@@ -174,21 +174,23 @@
         <table>
 
             <thead>
-                <tr>
-                    <th>Phone</th>
-                    <th>Telebirr</th>
-                    <th>Amount</th>
-                    <th>Withdraw Code</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
+    <tr>
+        <th>Phone</th>
+        <th>Telebirr</th>
+        <th>Requested Amount</th>
+        <th>VAT 15%</th>
+        <th>Telebirr Payout</th>
+        <th>Withdraw Code</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+</thead>
 
             <tbody id="withdrawalTable">
 
                 <tr>
-                    <td colspan="7" class="loading">
+                    <td colspan="9" class="loading">
                         Loading withdrawals...
                     </td>
                 </tr>
@@ -432,11 +434,32 @@ async function loadWithdrawals() {
                     </td>
 
                     <td>
-                        ${Number(
-                            withdrawal.amount || 0
-                        ).toLocaleString()}
-                        ETB
-                    </td>
+    ${Number(
+        withdrawal.amount || 0
+    ).toLocaleString()}
+    ETB
+</td>
+
+<td>
+    ${Number(
+        withdrawal.vat !== undefined
+            ? withdrawal.vat
+            : (Number(withdrawal.amount || 0) * 0.15)
+    ).toLocaleString()}
+    ETB
+</td>
+
+<td>
+    ${Number(
+        withdrawal.payoutAmount !== undefined
+            ? withdrawal.payoutAmount
+            : (
+                Number(withdrawal.amount || 0) -
+                (Number(withdrawal.amount || 0) * 0.15)
+            )
+    ).toLocaleString()}
+    ETB
+</td>
 
                     <td>
                         ${escapeHtml(
