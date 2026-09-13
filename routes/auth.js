@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const bcrypt = require("bcryptjs");
 
 const User = require("../models/User");
 const LoginActivity = require("../models/LoginActivity");
@@ -21,6 +22,34 @@ function generateReferralCode() {
 
 
 // ======================================================
+// CHECK STRONG PASSWORD
+// ======================================================
+
+function isStrongPassword(password) {
+
+    if (!password) {
+        return false;
+    }
+
+    // At least:
+    // 8 characters
+    // 1 uppercase letter
+    // 1 lowercase letter
+    // 1 number
+    // 1 special character
+
+    return (
+        password.length >= 8 &&
+        /[A-Z]/.test(password) &&
+        /[a-z]/.test(password) &&
+        /[0-9]/.test(password) &&
+        /[^A-Za-z0-9]/.test(password)
+    );
+
+}
+
+
+// ======================================================
 // LOGIN / CREATE USER
 // ======================================================
 
@@ -31,6 +60,11 @@ router.post("/login", async (req, res) => {
         const phone =
             req.body.phone
                 ? String(req.body.phone).trim()
+                : "";
+
+        const password =
+            req.body.password
+                ? String(req.body.password)
                 : "";
 
         const referralCode =
@@ -60,6 +94,24 @@ router.post("/login", async (req, res) => {
 
 
         // ==================================================
+        // CHECK PASSWORD
+        // ==================================================
+
+        if (!password) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Password is required."
+
+            });
+
+        }
+
+
+        // ==================================================
         // FIND EXISTING USER
         // ==================================================
 
@@ -75,13 +127,36 @@ router.post("/login", async (req, res) => {
 
         if (!user) {
 
+
+            // ==============================================
+            // NEW USER PASSWORD MUST BE STRONG
+            // ==============================================
+
+            if (!isStrongPassword(password)) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "Password must be at least 8 characters and contain an uppercase letter, lowercase letter, number, and special character."
+
+                });
+
+            }
+
+
+            // ==============================================
+            // GENERATE UNIQUE REFERRAL CODE
+            // ==============================================
+
             let myReferralCode =
                 generateReferralCode();
 
 
-            // ==================================================
+            // ==============================================
             // MAKE SURE REFERRAL CODE IS UNIQUE
-            // ==================================================
+            // ==============================================
 
             while (
                 await User.findOne({
@@ -96,11 +171,12 @@ router.post("/login", async (req, res) => {
             }
 
 
-            // ==================================================
+            // ==============================================
             // VERIFY REFERRAL CODE
-            // ==================================================
+            // ==============================================
 
             let validReferralCode = "";
+
 
             if (referralCode) {
 
@@ -113,9 +189,10 @@ router.post("/login", async (req, res) => {
 
                 if (referrer) {
 
-                    // ==========================================
+
+                    // ======================================
                     // PREVENT SELF REFERRAL
-                    // ==========================================
+                    // ======================================
 
                     if (
                         String(referrer.phone) ===
@@ -174,17 +251,33 @@ router.post("/login", async (req, res) => {
             }
 
 
-            // ==================================================
+            // ==============================================
+            // HASH PASSWORD
+            // ==============================================
+
+            const hashedPassword =
+                await bcrypt.hash(
+                    password,
+                    12
+                );
+
+
+            // ==============================================
             // CREATE USER
-            // ==================================================
+            // ==============================================
 
             user = new User({
 
                 phone: phone,
 
-                name: "New User",
+                password:
+                    hashedPassword,
 
-                balance: 0,
+                name:
+                    "New User",
+
+                balance:
+                    0,
 
                 referralCode:
                     myReferralCode,
@@ -192,29 +285,34 @@ router.post("/login", async (req, res) => {
                 referredBy:
                     validReferralCode,
 
-                referralEarnings: 0,
+                referralEarnings:
+                    0,
 
-                invitedUsers: 0,
+                invitedUsers:
+                    0,
 
-                referralPaid: false,
+                referralPaid:
+                    false,
 
-                totalEarnings: 0,
+                totalEarnings:
+                    0,
 
-                status: "Active"
+                status:
+                    "Active"
 
             });
 
 
-            // ==================================================
+            // ==============================================
             // SAVE USER
-            // ==================================================
+            // ==============================================
 
             await user.save();
 
 
-            // ==================================================
+            // ==============================================
             // SHOW NEW USER INFORMATION
-            // ==================================================
+            // ==============================================
 
             console.log(
                 "================================"
@@ -276,44 +374,104 @@ router.post("/login", async (req, res) => {
             );
 
 
-            // ==================================================
+            // ==============================================
+            // OLD USER WITHOUT PASSWORD
+            // ==============================================
+
+            if (!user.password) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "This account does not have a password yet. Please create or reset your password."
+
+                });
+
+            }
+
+
+            // ==============================================
+            // CHECK PASSWORD
+            // ==============================================
+
+            const passwordCorrect =
+                await bcrypt.compare(
+                    password,
+                    user.password
+                );
+
+
+            if (!passwordCorrect) {
+
+                // ==========================================
+                // RECORD FAILED LOGIN
+                // ==========================================
+
+                const failedActivity =
+                    new LoginActivity({
+
+                        phone:
+                            user.phone,
+
+                        ip:
+                            req.ip,
+
+                        browser:
+                            req.headers[
+                                "user-agent"
+                            ],
+
+                        status:
+                            "Failed"
+
+                    });
+
+
+                await failedActivity.save();
+
+
+                return res.status(401).json({
+
+                    success: false,
+
+                    message:
+                        "Incorrect password."
+
+                });
+
+            }
+
+
+            // ==============================================
             // ADD REFERRAL TO OLD EXISTING USER
-            // ==================================================
-            //
-            // This is important.
-            //
-            // If the user was created before the referral
-            // system was added, referredBy may be empty.
-            //
-            // If they now login using:
-            //
-            // ?ref=ABC123
-            //
-            // we can attach ABC123 to their account.
-            //
-            // ==================================================
+            // ==============================================
 
             if (
                 !user.referredBy &&
                 referralCode
             ) {
 
-                // ==============================================
+                // ==========================================
                 // FIND REFERRER
-                // ==============================================
+                // ==========================================
 
                 const referrer =
                     await User.findOne({
+
                         referralCode:
                             referralCode
+
                     });
 
 
                 if (referrer) {
 
-                    // ==========================================
+
+                    // ======================================
                     // PREVENT SELF REFERRAL
-                    // ==========================================
+                    // ======================================
 
                     if (
                         String(referrer.phone) ===
@@ -326,9 +484,10 @@ router.post("/login", async (req, res) => {
 
                     } else {
 
-                        // ======================================
+
+                        // ==================================
                         // SAVE REFERRER
-                        // ======================================
+                        // ==================================
 
                         user.referredBy =
                             referrer.referralCode;
@@ -378,9 +537,9 @@ router.post("/login", async (req, res) => {
             }
 
 
-            // ==================================================
+            // ==============================================
             // SHOW FINAL USER INFORMATION
-            // ==================================================
+            // ==============================================
 
             console.log(
                 "REFERRED BY AFTER:",
@@ -408,7 +567,9 @@ router.post("/login", async (req, res) => {
                     req.ip,
 
                 browser:
-                    req.headers["user-agent"],
+                    req.headers[
+                        "user-agent"
+                    ],
 
                 status:
                     "Success"
@@ -423,7 +584,7 @@ router.post("/login", async (req, res) => {
         // SEND USER DATA TO FRONTEND
         // ======================================================
 
-        res.json({
+        return res.json({
 
             success: true,
 
@@ -488,7 +649,7 @@ router.post("/login", async (req, res) => {
         );
 
 
-        res.status(500).json({
+        return res.status(500).json({
 
             success: false,
 
@@ -533,7 +694,7 @@ router.get(
                 });
 
 
-            res.json({
+            return res.json({
 
                 success: true,
 
@@ -551,12 +712,15 @@ router.get(
             );
 
 
-            res.status(500).json({
+            return res.status(500).json({
 
                 success: false,
 
                 message:
-                    err.message
+                    err.message,
+
+                deposits:
+                    []
 
             });
 
