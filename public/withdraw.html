@@ -586,10 +586,10 @@ async function loadWithdrawalHistory() {
 
 
         const response =
-            await fetch(
-                "/withdrawals/" +
-                encodeURIComponent(phone)
-            );
+    await fetch(
+        "/admin/withdrawals/" +
+        encodeURIComponent(phone)
+    );
 
 
         if (!response.ok) {
