@@ -391,6 +391,9 @@ withdraw.payoutAmount = payoutAmount;
 withdraw.amount = amount;
 withdraw.vat = vat;
 withdraw.payoutAmount = payoutAmount;
+withdraw.amount = requestedAmount;
+withdraw.vat = vat;
+withdraw.payoutAmount = payoutAmount;
 withdraw.status = "Approved";
 
 await withdraw.save();
