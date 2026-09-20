@@ -188,63 +188,134 @@ app.post("/deposit", upload.single("screenshot"), async (req, res) => {
 
 });
 // =======================
-// Start Server
-// =======================
-// =======================
-// Withdraw Route
+// WITHDRAW ROUTE
 // =======================
 
 app.post("/withdraw", async (req, res) => {
 
     try {
 
-        const { phone, telebirr, amount, withdrawCode } = req.body;
+        const phone = String(req.body.phone || "").trim();
+        const telebirr = String(req.body.telebirr || "").trim();
+        const amount = Number(req.body.amount);
+        const withdrawCode = String(req.body.withdrawCode || "").trim();
 
-        if (!phone || !telebirr || !amount || !withdrawCode) {
+        console.log("====================================");
+        console.log("NEW WITHDRAWAL REQUEST");
+        console.log("PHONE:", phone);
+        console.log("TELEBIRR:", telebirr);
+        console.log("AMOUNT:", amount);
+        console.log("WITHDRAW CODE:", withdrawCode);
+        console.log("====================================");
 
+        // =======================
+        // VALIDATION
+        // =======================
+
+        if (!phone) {
             return res.json({
-
                 success: false,
-
-                message: "All fields are required."
-
+                message: "Phone number is required."
             });
-
         }
 
-        if (Number(amount) < 10000) {
-
+        if (!telebirr) {
             return res.json({
-
                 success: false,
+                message: "Telebirr number is required."
+            });
+        }
 
+        if (!Number.isFinite(amount)) {
+            return res.json({
+                success: false,
+                message: "Invalid withdrawal amount."
+            });
+        }
+
+        if (amount < 10000) {
+            return res.json({
+                success: false,
                 message: "Minimum withdrawal is 10000 ETB."
-
             });
-
         }
 
-        if (Number(amount) > 400000) {
-
+        if (amount > 400000) {
             return res.json({
-
                 success: false,
-
                 message: "Maximum withdrawal is 400000 ETB."
-
             });
-
         }
+
+        if (!withdrawCode) {
+            return res.json({
+                success: false,
+                message: "Withdrawal code is required."
+            });
+        }
+
+        // =======================
+        // FIND USER
+        // =======================
+
+        const user = await User.findOne({
+            phone: phone
+        });
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User account not found."
+            });
+        }
+
+        // =======================
+        // CHECK BALANCE
+        // =======================
+
+        const balance = Number(user.balance || 0);
+
+        if (balance < amount) {
+            return res.json({
+                success: false,
+                message:
+                    "Insufficient balance. Available balance: " +
+                    balance +
+                    " ETB."
+            });
+        }
+
+        // =======================
+        // CALCULATE VAT
+        // =======================
+
+        const vat =
+            Math.round(
+                amount * 0.15 * 100
+            ) / 100;
+
+        const payoutAmount =
+            Math.round(
+                (amount - vat) * 100
+            ) / 100;
+
+        // =======================
+        // CREATE WITHDRAWAL
+        // =======================
 
         const withdraw = new Withdraw({
 
-            phone,
+            phone: phone,
 
-            telebirr,
+            telebirr: telebirr,
 
-            amount: Number(amount),
+            amount: amount,
 
-            withdrawCode,
+            vat: vat,
+
+            payoutAmount: payoutAmount,
+
+            withdrawCode: withdrawCode,
 
             status: "Pending"
 
@@ -252,23 +323,62 @@ app.post("/withdraw", async (req, res) => {
 
         await withdraw.save();
 
-        res.json({
+        console.log("WITHDRAWAL SAVED");
+        console.log("ID:", withdraw._id);
+        console.log("REQUESTED:", amount);
+        console.log("VAT:", vat);
+        console.log("PAYOUT:", payoutAmount);
+        console.log("STATUS:", withdraw.status);
+
+        // =======================
+        // RESPONSE
+        // =======================
+
+        return res.json({
 
             success: true,
 
-            message: "Withdrawal request submitted."
+            message:
+                "Withdrawal request submitted successfully.",
+
+            withdrawal: {
+
+                id: withdraw._id,
+
+                phone: withdraw.phone,
+
+                telebirr: withdraw.telebirr,
+
+                amount: withdraw.amount,
+
+                vat: withdraw.vat,
+
+                payoutAmount: withdraw.payoutAmount,
+
+                withdrawCode: withdraw.withdrawCode,
+
+                status: withdraw.status,
+
+                createdAt: withdraw.createdAt
+
+            }
 
         });
 
     } catch (err) {
 
-        console.log(err);
+        console.error(
+            "WITHDRAWAL ERROR:",
+            err
+        );
 
-        res.json({
+        return res.status(500).json({
 
             success: false,
 
-            message: err.message
+            message:
+                err.message ||
+                "Server error while creating withdrawal."
 
         });
 
