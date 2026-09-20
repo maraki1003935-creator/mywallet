@@ -188,158 +188,288 @@ app.post("/deposit", upload.single("screenshot"), async (req, res) => {
 
 });
 // =======================
-// WITHDRAW ROUTE
+// WITHDRAWAL REQUEST
 // =======================
 
 app.post("/withdraw", async (req, res) => {
 
     try {
 
-        const phone = String(req.body.phone || "").trim();
-        const telebirr = String(req.body.telebirr || "").trim();
-        const amount = Number(req.body.amount);
-        const withdrawCode = String(req.body.withdrawCode || "").trim();
+        const phone =
+            String(req.body.phone || "").trim();
 
-        console.log("====================================");
-        console.log("NEW WITHDRAWAL REQUEST");
-        console.log("PHONE:", phone);
-        console.log("TELEBIRR:", telebirr);
-        console.log("AMOUNT:", amount);
-        console.log("WITHDRAW CODE:", withdrawCode);
-        console.log("====================================");
+        const telebirr =
+            String(req.body.telebirr || "").trim();
 
-        // =======================
-        // VALIDATION
-        // =======================
+        const amount =
+            Number(req.body.amount);
+
+        // The frontend may send a withdrawCode,
+        // but the server will generate one automatically
+        // if it is missing.
+        let withdrawCode =
+            String(req.body.withdrawCode || "").trim();
+
+
+        // ==========================================
+        // VALIDATE PHONE
+        // ==========================================
 
         if (!phone) {
-            return res.json({
+
+            return res.status(400).json({
+
                 success: false,
                 message: "Phone number is required."
+
             });
+
         }
+
+
+        // ==========================================
+        // VALIDATE TELEBIRR
+        // ==========================================
 
         if (!telebirr) {
-            return res.json({
+
+            return res.status(400).json({
+
                 success: false,
                 message: "Telebirr number is required."
+
             });
+
         }
 
-        if (!Number.isFinite(amount)) {
-            return res.json({
+
+        // ==========================================
+        // VALIDATE AMOUNT
+        // ==========================================
+
+        if (
+            !Number.isFinite(amount) ||
+            amount <= 0
+        ) {
+
+            return res.status(400).json({
+
                 success: false,
-                message: "Invalid withdrawal amount."
+                message: "Please enter a valid withdrawal amount."
+
             });
+
         }
+
 
         if (amount < 10000) {
-            return res.json({
+
+            return res.status(400).json({
+
                 success: false,
                 message: "Minimum withdrawal is 10000 ETB."
+
             });
+
         }
+
 
         if (amount > 400000) {
-            return res.json({
+
+            return res.status(400).json({
+
                 success: false,
                 message: "Maximum withdrawal is 400000 ETB."
+
             });
+
         }
 
-        if (!withdrawCode) {
-            return res.json({
-                success: false,
-                message: "Withdrawal code is required."
-            });
-        }
 
-        // =======================
+        // ==========================================
         // FIND USER
-        // =======================
+        // ==========================================
 
-        const user = await User.findOne({
-            phone: phone
-        });
+        const user =
+            await User.findOne({
+                phone: phone
+            });
+
 
         if (!user) {
-            return res.json({
+
+            return res.status(404).json({
+
                 success: false,
                 message: "User account not found."
+
             });
+
         }
 
-        // =======================
+
+        // ==========================================
         // CHECK BALANCE
-        // =======================
+        // ==========================================
 
-        const balance = Number(user.balance || 0);
+        const currentBalance =
+            Number(user.balance || 0);
 
-        if (balance < amount) {
-            return res.json({
+
+        if (currentBalance < amount) {
+
+            return res.status(400).json({
+
                 success: false,
+
                 message:
-                    "Insufficient balance. Available balance: " +
-                    balance +
+                    "Insufficient balance. Your current balance is " +
+                    currentBalance +
                     " ETB."
+
             });
+
         }
 
-        // =======================
+
+        // ==========================================
+        // GENERATE WITHDRAWAL CODE
+        // ==========================================
+
+        if (!withdrawCode) {
+
+            withdrawCode =
+                "WD-" +
+                Date.now() +
+                "-" +
+                Math.floor(
+                    1000 + Math.random() * 9000
+                );
+
+        }
+
+
+        // ==========================================
         // CALCULATE VAT
-        // =======================
+        // ==========================================
+
+        const VAT_RATE = 0.15;
+
+        const requestedAmount =
+            Math.round(
+                amount * 100
+            ) / 100;
 
         const vat =
             Math.round(
-                amount * 0.15 * 100
+                requestedAmount *
+                VAT_RATE *
+                100
             ) / 100;
 
         const payoutAmount =
             Math.round(
-                (amount - vat) * 100
+                (
+                    requestedAmount -
+                    vat
+                ) * 100
             ) / 100;
 
-        // =======================
+
+        // ==========================================
         // CREATE WITHDRAWAL
-        // =======================
+        // ==========================================
 
-        const withdraw = new Withdraw({
+        const withdraw =
+            new Withdraw({
 
-            phone: phone,
+                phone: phone,
 
-            telebirr: telebirr,
+                telebirr: telebirr,
 
-            amount: amount,
+                amount: requestedAmount,
 
-            vat: vat,
+                vat: vat,
 
-            payoutAmount: payoutAmount,
+                payoutAmount: payoutAmount,
 
-            withdrawCode: withdrawCode,
+                withdrawCode: withdrawCode,
 
-            status: "Pending"
+                status: "Pending"
 
-        });
+            });
+
 
         await withdraw.save();
 
-        console.log("WITHDRAWAL SAVED");
-        console.log("ID:", withdraw._id);
-        console.log("REQUESTED:", amount);
-        console.log("VAT:", vat);
-        console.log("PAYOUT:", payoutAmount);
-        console.log("STATUS:", withdraw.status);
 
-        // =======================
+        // ==========================================
+        // LOG REQUEST
+        // ==========================================
+
+        console.log(
+            "===================================="
+        );
+
+        console.log(
+            "NEW WITHDRAWAL REQUEST"
+        );
+
+        console.log(
+            "PHONE:",
+            phone
+        );
+
+        console.log(
+            "TELEBIRR:",
+            telebirr
+        );
+
+        console.log(
+            "REQUESTED AMOUNT:",
+            requestedAmount
+        );
+
+        console.log(
+            "VAT:",
+            vat
+        );
+
+        console.log(
+            "PAYOUT:",
+            payoutAmount
+        );
+
+        console.log(
+            "WITHDRAW CODE:",
+            withdrawCode
+        );
+
+        console.log(
+            "STATUS:",
+            "Pending"
+        );
+
+        console.log(
+            "WITHDRAWAL ID:",
+            withdraw._id
+        );
+
+        console.log(
+            "===================================="
+        );
+
+
+        // ==========================================
         // RESPONSE
-        // =======================
+        // ==========================================
 
-        return res.json({
+        return res.status(201).json({
 
             success: true,
 
             message:
-                "Withdrawal request submitted successfully.",
+                "Withdrawal request submitted successfully. Please wait for admin approval.",
 
             withdrawal: {
 
@@ -353,24 +483,30 @@ app.post("/withdraw", async (req, res) => {
 
                 vat: withdraw.vat,
 
-                payoutAmount: withdraw.payoutAmount,
+                payoutAmount:
+                    withdraw.payoutAmount,
 
-                withdrawCode: withdraw.withdrawCode,
+                withdrawCode:
+                    withdraw.withdrawCode,
 
-                status: withdraw.status,
+                status:
+                    withdraw.status,
 
-                createdAt: withdraw.createdAt
+                createdAt:
+                    withdraw.createdAt
 
             }
 
         });
 
+
     } catch (err) {
 
         console.error(
-            "WITHDRAWAL ERROR:",
+            "WITHDRAW REQUEST ERROR:",
             err
         );
+
 
         return res.status(500).json({
 
@@ -378,7 +514,7 @@ app.post("/withdraw", async (req, res) => {
 
             message:
                 err.message ||
-                "Server error while creating withdrawal."
+                "Server error while submitting withdrawal."
 
         });
 
