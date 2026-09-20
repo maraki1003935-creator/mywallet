@@ -178,82 +178,59 @@ router.post(
             if (!withdraw) {
 
                 return res.status(404).json({
+
                     success: false,
-                    message: "Withdrawal not found."
+
+                    message:
+                        "Withdrawal request not found."
+
                 });
 
             }
 
-
             // ======================================
-            // PREVENT DOUBLE APPROVAL
+            // ONLY PENDING CAN BE APPROVED
             // ======================================
 
             if (
-                String(withdraw.status).toLowerCase() ===
-                "approved"
+                String(withdraw.status).toLowerCase() !==
+                "pending"
             ) {
 
-                return res.json({
+                return res.status(400).json({
+
                     success: false,
-                    message: "Withdrawal already approved."
+
+                    message:
+                        "This withdrawal is already " +
+                        withdraw.status + "."
+
                 });
 
             }
-
-
-            // ======================================
-            // PREVENT APPROVING REJECTED WITHDRAWAL
-            // ======================================
-
-            if (
-                String(withdraw.status).toLowerCase() ===
-                "rejected"
-            ) {
-
-                return res.json({
-                    success: false,
-                    message: "Rejected withdrawal cannot be approved."
-                });
-
-            }
-
 
             // ======================================
             // VALIDATE AMOUNT
             // ======================================
 
-            const amount = Number(withdraw.amount);
+            const requestedAmount =
+                Number(withdraw.amount);
 
             if (
-                !Number.isFinite(amount) ||
-                amount <= 0
+                !Number.isFinite(requestedAmount) ||
+                requestedAmount <= 0
             ) {
 
                 return res.status(400).json({
+
                     success: false,
-                    message: "Invalid withdrawal amount."
+
+                    message:
+                        "Invalid withdrawal amount."
+
                 });
 
             }
-
-
-            // ======================================
-            // VALIDATE TELEBIRR NUMBER
-            // ======================================
-
-            const telebirr =
-                String(withdraw.telebirr || "").trim();
-
-            if (!telebirr) {
-
-                return res.status(400).json({
-                    success: false,
-                    message: "Telebirr number is missing."
-                });
-
-            }
-
 
             // ======================================
             // FIND USER
@@ -267,145 +244,133 @@ router.post(
             if (!user) {
 
                 return res.status(404).json({
+
                     success: false,
+
                     message:
-                        "User not found: " +
+                        "User account not found: " +
                         withdraw.phone
+
                 });
 
             }
-
 
             // ======================================
             // CHECK USER BALANCE
             // ======================================
 
-            // ======================================
-// ======================================
-// CALCULATE 15% VAT
-// ======================================
+            const oldBalance =
+                Number(user.balance || 0);
 
-const VAT_RATE = 0.15;
+            if (oldBalance < requestedAmount) {
 
-// Full amount requested by user
-const requestedAmount =
-    Math.round(Number(amount) * 100) / 100;
+                return res.status(400).json({
 
-// 15% VAT
-const vat =
-    Math.round(
-        requestedAmount * VAT_RATE * 100
-    ) / 100;
+                    success: false,
 
-// Amount actually sent to user's Telebirr
-const payoutAmount =
-    Math.round(
-        (requestedAmount - vat) * 100
-    ) / 100;
+                    message:
+                        "User does not have enough balance. " +
+                        "Available: " +
+                        oldBalance +
+                        " ETB, requested: " +
+                        requestedAmount +
+                        " ETB."
 
-console.log("====================================");
-console.log("WITHDRAWAL VAT CALCULATION");
-console.log("REQUESTED AMOUNT:", requestedAmount);
-console.log("VAT 15%:", vat);
-console.log("TELEBIRR PAYOUT:", payoutAmount);
-console.log("====================================");
+                });
 
-
-// ======================================
-// CHECK USER BALANCE
-// ======================================
-
-const currentBalance =
-    Number(user.balance || 0);
-
-if (currentBalance < requestedAmount) {
-
-    return res.json({
-        success: false,
-        message:
-            "Insufficient user balance. " +
-            "Available: " +
-            currentBalance +
-            " ETB, requested: " +
-            requestedAmount +
-            " ETB."
-    });
-
-}
-
-
-// ======================================
-// SAVE OLD BALANCE
-// ======================================
-
-const oldBalance =
-    currentBalance;
-
-
-// ======================================
-// DEDUCT FULL WITHDRAWAL AMOUNT
-// VAT IS INCLUDED IN THIS AMOUNT
-// ======================================
-
-user.balance =
-    Math.round(
-        (oldBalance - requestedAmount) * 100
-    ) / 100;
-
-
-// ======================================
-// SAVE USER
-// ======================================
-
-await user.save();
-
+            }
 
             // ======================================
-// SAVE WITHDRAWAL DETAILS
-// ======================================
+            // CALCULATE 15% VAT
+            // ======================================
 
-withdraw.amount =
-    requestedAmount;
+            const VAT_RATE = 0.15;
 
-withdraw.vat =
-    vat;
+            const vat =
+                Math.round(
+                    requestedAmount *
+                    VAT_RATE *
+                    100
+                ) / 100;
 
-withdraw.payoutAmount =
-    payoutAmount;
-
-withdraw.status =
-    "Approved";
-
-await withdraw.save();
-
+            const payoutAmount =
+                Math.round(
+                    (
+                        requestedAmount -
+                        vat
+                    ) * 100
+                ) / 100;
 
             // ======================================
-            // CREATE WITHDRAWAL TRANSACTION
+            // DEDUCT FULL REQUESTED AMOUNT
+            // ======================================
+            //
+            // Example:
+            //
+            // Requested = 10,000
+            // VAT       = 1,500
+            // Payout    = 8,500
+            //
+            // Wallet deduction = 10,000
+            //
+            // ======================================
+
+            const newBalance =
+                Math.round(
+                    (
+                        oldBalance -
+                        requestedAmount
+                    ) * 100
+                ) / 100;
+
+            user.balance = newBalance;
+
+            await user.save();
+
+            // ======================================
+            // UPDATE WITHDRAWAL
+            // ======================================
+
+            withdraw.amount =
+                requestedAmount;
+
+            withdraw.vat =
+                vat;
+
+            withdraw.payoutAmount =
+                payoutAmount;
+
+            withdraw.status =
+                "Approved";
+
+            await withdraw.save();
+
+            // ======================================
+            // CREATE TRANSACTION
             // ======================================
 
             await Transaction.create({
 
-    phone:
-        user.phone,
+                phone:
+                    user.phone,
 
-    type:
-        "Withdrawal",
+                type:
+                    "Withdrawal",
 
-    amount:
-    requestedAmount,
+                amount:
+                    requestedAmount,
 
-    status:
-        "Approved",
+                status:
+                    "Approved",
 
-    reference:
-        "WITHDRAW-" +
-        String(withdraw._id)
+                reference:
+                    "WITHDRAW-" +
+                    String(withdraw._id)
 
-});
-
+            });
 
             // ======================================
-            // USER NOTIFICATION
+            // NOTIFY USER
             // ======================================
 
             await Notification.create({
@@ -417,29 +382,33 @@ await withdraw.save();
                     "Withdrawal Approved",
 
                 message:
-    "Your withdrawal request of " +
-    amount +
-    " ETB has been approved. " +
-    "VAT (15%): " +
-    vat +
-    " ETB. " +
-    "Amount sent to Telebirr: " +
-    payoutAmount +
-    " ETB."
+                    "Your withdrawal of " +
+                    requestedAmount +
+                    " ETB was approved. " +
+                    "VAT 15%: " +
+                    vat +
+                    " ETB. " +
+                    "Telebirr payout: " +
+                    payoutAmount +
+                    " ETB."
 
             });
 
-
             // ======================================
-            // LOG
+            // SERVER LOG
             // ======================================
 
             console.log(
-                "===================================="
+                "======================================"
             );
 
             console.log(
                 "WITHDRAWAL APPROVED"
+            );
+
+            console.log(
+                "WITHDRAWAL ID:",
+                withdraw._id
             );
 
             console.log(
@@ -448,13 +417,18 @@ await withdraw.save();
             );
 
             console.log(
-                "TELEBIRR:",
-                telebirr
+                "REQUESTED:",
+                requestedAmount
             );
 
             console.log(
-                "AMOUNT:",
-                amount
+                "VAT:",
+                vat
+            );
+
+            console.log(
+                "PAYOUT:",
+                payoutAmount
             );
 
             console.log(
@@ -464,18 +438,12 @@ await withdraw.save();
 
             console.log(
                 "NEW BALANCE:",
-                user.balance
+                newBalance
             );
 
             console.log(
-                "WITHDRAW CODE:",
-                withdraw.withdrawCode
+                "======================================"
             );
-
-            console.log(
-                "===================================="
-            );
-
 
             // ======================================
             // RESPONSE
@@ -483,42 +451,36 @@ await withdraw.save();
 
             return res.json({
 
-    success: true,
+                success: true,
 
-    message:
-        "Withdrawal approved successfully.",
+                message:
+                    "Withdrawal approved successfully.",
 
-    withdrawalId:
-        withdraw._id,
+                withdrawalId:
+                    withdraw._id,
 
-    phone:
-        user.phone,
+                phone:
+                    user.phone,
 
-    telebirr:
-        telebirr,
+                requestedAmount:
+                    requestedAmount,
 
-    requestedAmount:
-    requestedAmount,
+                vat:
+                    vat,
 
-    vatRate:
-        15,
+                payoutAmount:
+                    payoutAmount,
 
-    vat:
-        vat,
+                oldBalance:
+                    oldBalance,
 
-    payoutAmount:
-        payoutAmount,
+                newBalance:
+                    newBalance,
 
-    oldBalance:
-        oldBalance,
+                status:
+                    "Approved"
 
-    newBalance:
-        Number(user.balance || 0),
-
-        status:
-        withdraw.status
-
-});
+            });
 
         } catch (err) {
 
@@ -533,15 +495,16 @@ await withdraw.save();
 
                 message:
                     err.message ||
-                    "Server error."
+                    "Server error while approving withdrawal."
 
             });
 
         }
 
     }
-
 );
+
+
 
 
 // ======================================
