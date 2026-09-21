@@ -157,8 +157,7 @@ router.get("/withdrawals", verifyAdmin, async (req, res) => {
 
 
 // ======================================
-// APPROVE WITHDRAWAL
-// ADMIN ONLY
+// ADMIN APPROVE WITHDRAWAL
 // ======================================
 
 router.post(
@@ -168,74 +167,47 @@ router.post(
 
         try {
 
-            // ======================================
-            // FIND WITHDRAWAL
-            // ======================================
-
+            // Find withdrawal request
             const withdraw =
                 await Withdraw.findById(req.params.id);
 
             if (!withdraw) {
 
                 return res.status(404).json({
-
                     success: false,
-
-                    message:
-                        "Withdrawal request not found."
-
+                    message: "Withdrawal request not found."
                 });
 
             }
 
-            // ======================================
-            // ONLY PENDING CAN BE APPROVED
-            // ======================================
-
+            // Only Pending withdrawals can be approved
             if (
                 String(withdraw.status).toLowerCase() !==
                 "pending"
             ) {
 
                 return res.status(400).json({
-
                     success: false,
-
                     message:
                         "This withdrawal is already " +
                         withdraw.status + "."
-
                 });
 
             }
 
-            // ======================================
-            // VALIDATE AMOUNT
-            // ======================================
-
-            const requestedAmount =
+            const amount =
                 Number(withdraw.amount);
 
-            if (
-                !Number.isFinite(requestedAmount) ||
-                requestedAmount <= 0
-            ) {
+            if (!Number.isFinite(amount) || amount <= 0) {
 
                 return res.status(400).json({
-
                     success: false,
-
-                    message:
-                        "Invalid withdrawal amount."
-
+                    message: "Invalid withdrawal amount."
                 });
 
             }
 
-            // ======================================
-            // FIND USER
-            // ======================================
-
+            // Find user
             const user =
                 await User.findOne({
                     phone: withdraw.phone
@@ -244,210 +216,81 @@ router.post(
             if (!user) {
 
                 return res.status(404).json({
-
                     success: false,
-
                     message:
-                        "User account not found: " +
+                        "User not found: " +
                         withdraw.phone
-
                 });
 
             }
 
-            // ======================================
-            // CHECK USER BALANCE
-            // ======================================
-
+            // Check user's current balance
             const oldBalance =
                 Number(user.balance || 0);
 
-            if (oldBalance < requestedAmount) {
+            if (oldBalance < amount) {
 
                 return res.status(400).json({
-
                     success: false,
-
                     message:
                         "User does not have enough balance. " +
                         "Available: " +
                         oldBalance +
-                        " ETB, requested: " +
-                        requestedAmount +
                         " ETB."
-
                 });
 
             }
 
-            // ======================================
-            // CALCULATE 15% VAT
-            // ======================================
-
-            const VAT_RATE = 0.15;
+            // ==================================
+            // CALCULATE VAT
+            // ==================================
 
             const vat =
                 Math.round(
-                    requestedAmount *
-                    VAT_RATE *
-                    100
+                    amount * 0.15 * 100
                 ) / 100;
 
             const payoutAmount =
                 Math.round(
-                    (
-                        requestedAmount -
-                        vat
-                    ) * 100
+                    (amount - vat) * 100
                 ) / 100;
 
-            // ======================================
+            // ==================================
             // DEDUCT FULL REQUESTED AMOUNT
-            // ======================================
-            //
-            // Example:
-            //
-            // Requested = 10,000
-            // VAT       = 1,500
-            // Payout    = 8,500
-            //
-            // Wallet deduction = 10,000
-            //
-            // ======================================
+            // ==================================
 
             const newBalance =
                 Math.round(
-                    (
-                        oldBalance -
-                        requestedAmount
-                    ) * 100
+                    (oldBalance - amount) * 100
                 ) / 100;
 
             user.balance = newBalance;
 
             await user.save();
 
-            // ======================================
+            // ==================================
             // UPDATE WITHDRAWAL
-            // ======================================
+            // ==================================
 
-            withdraw.amount =
-                requestedAmount;
-
-            withdraw.vat =
-                vat;
-
-            withdraw.payoutAmount =
-                payoutAmount;
-
-            withdraw.status =
-                "Approved";
+            withdraw.amount = amount;
+            withdraw.vat = vat;
+            withdraw.payoutAmount = payoutAmount;
+            withdraw.status = "Approved";
 
             await withdraw.save();
 
-            // ======================================
-            // CREATE TRANSACTION
-            // ======================================
-
-            await Transaction.create({
-
-                phone:
-                    user.phone,
-
-                type:
-                    "Withdrawal",
-
-                amount:
-                    requestedAmount,
-
-                status:
-                    "Approved",
-
-                reference:
-                    "WITHDRAW-" +
-                    String(withdraw._id)
-
-            });
-
-            // ======================================
-            // NOTIFY USER
-            // ======================================
-
-            await Notification.create({
-
-                phone:
-                    user.phone,
-
-                title:
-                    "Withdrawal Approved",
-
-                message:
-                    "Your withdrawal of " +
-                    requestedAmount +
-                    " ETB was approved. " +
-                    "VAT 15%: " +
-                    vat +
-                    " ETB. " +
-                    "Telebirr payout: " +
-                    payoutAmount +
-                    " ETB."
-
-            });
-
-            // ======================================
-            // SERVER LOG
-            // ======================================
-
             console.log(
-                "======================================"
-            );
-
-            console.log(
-                "WITHDRAWAL APPROVED"
-            );
-
-            console.log(
-                "WITHDRAWAL ID:",
-                withdraw._id
-            );
-
-            console.log(
-                "USER:",
-                user.phone
-            );
-
-            console.log(
-                "REQUESTED:",
-                requestedAmount
-            );
-
-            console.log(
-                "VAT:",
-                vat
-            );
-
-            console.log(
-                "PAYOUT:",
-                payoutAmount
-            );
-
-            console.log(
-                "OLD BALANCE:",
-                oldBalance
-            );
-
-            console.log(
-                "NEW BALANCE:",
+                "WITHDRAWAL APPROVED:",
+                withdraw._id,
+                "User:",
+                user.phone,
+                "Old balance:",
+                oldBalance,
+                "Deducted:",
+                amount,
+                "New balance:",
                 newBalance
             );
-
-            console.log(
-                "======================================"
-            );
-
-            // ======================================
-            // RESPONSE
-            // ======================================
 
             return res.json({
 
@@ -456,29 +299,33 @@ router.post(
                 message:
                     "Withdrawal approved successfully.",
 
-                withdrawalId:
-                    withdraw._id,
+                withdrawal: {
 
-                phone:
-                    user.phone,
+                    _id:
+                        withdraw._id,
 
-                requestedAmount:
-                    requestedAmount,
+                    phone:
+                        withdraw.phone,
 
-                vat:
-                    vat,
+                    amount:
+                        withdraw.amount,
 
-                payoutAmount:
-                    payoutAmount,
+                    vat:
+                        withdraw.vat,
+
+                    payoutAmount:
+                        withdraw.payoutAmount,
+
+                    status:
+                        withdraw.status
+
+                },
 
                 oldBalance:
                     oldBalance,
 
                 newBalance:
-                    newBalance,
-
-                status:
-                    "Approved"
+                    newBalance
 
             });
 
@@ -495,7 +342,7 @@ router.post(
 
                 message:
                     err.message ||
-                    "Server error while approving withdrawal."
+                    "Failed to approve withdrawal."
 
             });
 
@@ -503,7 +350,6 @@ router.post(
 
     }
 );
-
 
 
 

@@ -199,91 +199,44 @@ app.post("/withdraw", async (req, res) => {
         const telebirr = String(req.body.telebirr || "").trim();
         const amount = Number(req.body.amount);
 
-        // ======================================
-        // VALIDATE PHONE
-        // ======================================
-
-        if (!phone) {
-
+        if (!phone || !telebirr || !Number.isFinite(amount)) {
             return res.status(400).json({
                 success: false,
-                message: "Phone number is required."
+                message: "Phone, Telebirr and amount are required."
             });
-
-        }
-
-        // ======================================
-        // VALIDATE TELEBIRR
-        // ======================================
-
-        if (!telebirr) {
-
-            return res.status(400).json({
-                success: false,
-                message: "Telebirr number is required."
-            });
-
-        }
-
-        // ======================================
-        // VALIDATE AMOUNT
-        // ======================================
-
-        if (!Number.isFinite(amount)) {
-
-            return res.status(400).json({
-                success: false,
-                message: "Please enter a valid withdrawal amount."
-            });
-
         }
 
         if (amount < 10000) {
-
             return res.status(400).json({
                 success: false,
                 message: "Minimum withdrawal is 10000 ETB."
             });
-
         }
 
         if (amount > 400000) {
-
             return res.status(400).json({
                 success: false,
                 message: "Maximum withdrawal is 400000 ETB."
             });
-
         }
 
-        // ======================================
-        // FIND USER
-        // ======================================
-
+        // Find user
         const user = await User.findOne({
             phone: phone
         });
 
         if (!user) {
-
             return res.status(404).json({
                 success: false,
                 message: "User account not found."
             });
-
         }
 
-        // ======================================
-        // CHECK BALANCE
-        // IMPORTANT:
-        // DO NOT DEDUCT MONEY HERE.
-        // MONEY IS DEDUCTED ONLY AFTER ADMIN APPROVES.
-        // ======================================
-
+        // Check balance BEFORE creating request
+        // but DO NOT deduct it here.
         const balance = Number(user.balance || 0);
 
         if (balance < amount) {
-
             return res.status(400).json({
                 success: false,
                 message:
@@ -291,21 +244,15 @@ app.post("/withdraw", async (req, res) => {
                     balance +
                     " ETB."
             });
-
         }
 
-        // ======================================
-        // CALCULATE VAT
-        // ======================================
-
-        const VAT_RATE = 0.15;
-
+        // Calculate VAT
         const requestedAmount =
             Math.round(amount * 100) / 100;
 
         const vat =
             Math.round(
-                requestedAmount * VAT_RATE * 100
+                requestedAmount * 0.15 * 100
             ) / 100;
 
         const payoutAmount =
@@ -313,10 +260,7 @@ app.post("/withdraw", async (req, res) => {
                 (requestedAmount - vat) * 100
             ) / 100;
 
-        // ======================================
-        // GENERATE WITHDRAW CODE
-        // ======================================
-
+        // Generate withdrawal code automatically
         const withdrawCode =
             "WD-" +
             Date.now() +
@@ -325,10 +269,7 @@ app.post("/withdraw", async (req, res) => {
                 1000 + Math.random() * 9000
             );
 
-        // ======================================
-        // CREATE PENDING WITHDRAWAL
-        // ======================================
-
+        // SAVE AS PENDING
         const withdraw = new Withdraw({
 
             phone: phone,
@@ -349,32 +290,20 @@ app.post("/withdraw", async (req, res) => {
 
         await withdraw.save();
 
-        // ======================================
-        // LOG
-        // ======================================
-
-        console.log("======================================");
-        console.log("NEW WITHDRAWAL REQUEST");
-        console.log("ID:", withdraw._id);
-        console.log("PHONE:", phone);
-        console.log("TELEBIRR:", telebirr);
-        console.log("REQUESTED:", requestedAmount);
-        console.log("VAT:", vat);
-        console.log("PAYOUT:", payoutAmount);
-        console.log("STATUS:", "Pending");
-        console.log("USER BALANCE:", balance);
-        console.log("======================================");
-
-        // ======================================
-        // RESPONSE
-        // ======================================
+        console.log(
+            "NEW WITHDRAWAL REQUEST:",
+            withdraw._id,
+            phone,
+            requestedAmount,
+            "Pending"
+        );
 
         return res.status(201).json({
 
             success: true,
 
             message:
-                "Withdrawal request submitted successfully. Please wait for admin approval.",
+                "Withdrawal request submitted. Waiting for admin approval.",
 
             withdrawal: {
 
@@ -413,42 +342,7 @@ app.post("/withdraw", async (req, res) => {
 
             message:
                 err.message ||
-                "Server error while creating withdrawal request."
-
-        });
-
-    }
-
-});
-// ===============================
-// Get User Transaction History
-// ===============================
-
-app.get("/transactions/:phone", async (req, res) => {
-
-    try {
-
-        const transactions = await Transaction.find({
-
-            phone: req.params.phone
-
-        }).sort({
-
-            createdAt: -1
-
-        });
-
-        res.json(transactions);
-
-    } catch (err) {
-
-        console.log(err);
-
-        res.status(500).json({
-
-            success: false,
-
-            message: err.message
+                "Failed to create withdrawal request."
 
         });
 
